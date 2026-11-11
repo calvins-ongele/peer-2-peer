@@ -15,6 +15,11 @@ class User extends Controller
         $this->view->title = "Balance";
         $this->view->render("user/balance");
     }
+    public function game() { 
+        $this->view->title = "Games";
+        $this->view->render("user/game-details");
+    }
+
 
 
 

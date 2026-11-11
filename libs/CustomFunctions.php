@@ -146,12 +146,6 @@ class CustomFunctions {
         }      
     
     }
-    public static function _vaildUrl($url) {
-        $url = trim($url);
-        $url = strtolower($url);
-        $url = str_replace(' ', '-', $url);
-        return preg_replace('/[^A-Za-z0-9\_]/', '', $url);
-    }
     public static function randchars($len = 8, $password=false) {
         $str = '';
        $alphabet = "aAbBcCd2DeEfFg3GhHijJ4kKLm56MnNpPqQr7RsStYu8UvVwWxX8yYzZ";
@@ -217,12 +211,6 @@ class CustomFunctions {
     
         return true;
     }
-    public static function vaildUrl($url) {
-        $url = trim($url);
-        $url = strtolower($url);
-        $url = str_replace(' ', '-', $url);
-        return preg_replace('/[^A-Za-z0-9\-]/', '', $url);
-    }
     public static function SendSMS($msg, $phone) {
         
     }
@@ -242,8 +230,8 @@ class CustomFunctions {
 		</style>";
 	}
  
-    
-    public static function validUrl($url) {
+     
+    public static function validUrl(string $url) {
         $url = trim($url);
         $url = strtolower($url);
         $url = str_replace(' ', '-', $url);
@@ -495,10 +483,7 @@ class CustomFunctions {
                 $data = filter_var($data, FILTER_SANITIZE_URL);
                 return filter_var($data, FILTER_VALIDATE_URL) ? $data: false;
             case 'float':
-                return filter_var($data, FILTER_VALIDATE_FLOAT);
-            case 'url':
-                return filter_var($data, FILTER_VALIDATE_URL);
-            case 'string':
+                return filter_var($data, FILTER_VALIDATE_FLOAT); 
             default:
                 return htmlspecialchars($data, ENT_QUOTES, 'UTF-8');
         }

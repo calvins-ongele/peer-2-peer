@@ -80,6 +80,22 @@ create table deposit_request(
   created_at datetime default current_timestamp()
 );
 
+-- ---------------
+-- transaction_history
+-- ------- 
+create table transaction_history(
+  id int auto_increment primary key,
+  amount decimal(14,2),
+  user_id int not null,
+  job_status enum('pending','completed', 'refunded' ) default 'completed',
+  uuid varchar(50) default uuid(),
+  order_uuid varchar(50),
+  purpose varchar(100),
+  created_at datetime default current_timestamp(),
+  updated_at datetime default current_timestamp() on update current_timestamp(),
+  foreign key (user_id) references users(id) on delete cascade
+);
+
 -- -------
 -- remember_keys
 -- ------
@@ -229,6 +245,7 @@ CREATE TABLE games(
   is_double_or_nothing int default 0, -- or 1
   stake_cost decimal(14,2) default 0.00, -- enforcing minimum could hinder free promotions
   game_type enum('public', 'private') default 'private',
+  game_url varchar(100),
   status enum('completed', 'abandoned_after_start', 'cancelled_b4_start', 'overriden_by_admin','pending', 'in_progress' ) default 'pending',
   created_at datetime default current_timestamp(),
   updated_at datetime default current_timestamp() ON Update current_timestamp(),

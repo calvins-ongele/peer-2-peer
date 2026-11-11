@@ -1,3 +1,8 @@
+<?php
+//  $choices = ['Doe', '', null, 'Nairobi'];
+//  $filtered = array_filter($choices);
+//  print_r(count($filtered));
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -188,18 +193,21 @@
                                         <div class="row g-3 mb-3">
                                             <div class="col-md-6">
                                                 <label for="gameType" class="form-label text-light fw-medium">Game Type</label>
-                                                <select class="form-select bg-secondary text-white border-0 py-2" id="gameType" name="game_type">
-                                                    <option value="private" selected>Private (1-on-1 Invited Opponent)</option>
+                                                <select class="form-select bg-secondary text-white border-0 py-2" id="gameType" name="game_type" required >
+                                                    <option value=""  hidden style="color:white">Select game type</option>
                                                     <option value="public">Public (Open via Link / Listing)</option>
+                                                    <option value="private" >Private (1-on-1 Invited Opponent)</option>
                                                 </select>
+                                                <div class="invalid-feedback">Please enter a valid type.</div>
                                             </div>
                                             <div class="col-md-6">
                                                 <label for="stakeCost" class="form-label text-light fw-medium">Stake Cost (USD)</label>
                                                 <div class="input-group">
                                                     <span class="input-group-text bg-dark text-warning border-secondary">$</span>
-                                                    <input type="number" class="form-control bg-secondary text-white border-0 py-2" id="stakeCost" name="stake_cost" step="0.01" min="0.00" value="0.00" placeholder="0.00">
+                                                    <input required type="number" class="form-control bg-secondary text-white border-0 py-2" id="stakeCost" name="stake_cost" step="0.01" min="0.00" value="" placeholder="0.00">
+                                                <div class="invalid-feedback">Please enter a valid cost.</div>
                                                 </div>
-                                                <div class="form-text text-muted">Set to <code>0.00</code> for free promotional matches.</div>
+                                                <div class="form-text text-muted freeforPromotion">Set to <code>0.00</code> for free promotional matches.</div>
                                             </div>
                                         </div>
 
@@ -223,7 +231,7 @@
 
                                         <div class="mb-3">
                                             <label for="evidenceUrl" class="form-label text-light fw-medium">Evidence / Proof Reference URL (Optional)</label>
-                                            <input type="url" class="form-control bg-secondary text-white border-0 py-2" id="evidenceUrl" name="evidence_4_disputes" maxlength="500"
+                                            <input type="text" class="form-control bg-secondary text-white border-0 py-2" id="evidenceUrl" name="evidence_4_disputes" maxlength="500"
                                              placeholder="Explain or provide a URL" mplaceholder="https://official-stats.com/match/12345">
                                             <div class="form-text text-muted">Default link or stream URL to assist in settling potential disputes.</div>
                                         </div>
@@ -314,7 +322,7 @@
                     <h1 class="display-5 fw-extrabold text-success my-2" id="qualifiedAmountDisplay">$0.00</h1>
                     <p class="text-muted small mb-4" style="color:var(--body-primary-background) !important;">Anyone joining will have to pay the amount.</p>
 
-                    <a href="/index/convenience" class="qualifiedAmountHref btn btn-action w-100 justify-content-center py-3 fs-6" style="background:var(--body-primary-background);color:white" >
+                    <a href="/index/convenience" class="proceedToInvite btn btn-action w-100 justify-content-center py-3 fs-6" style="background:var(--body-primary-background);color:white" >
                         Proceed to Invite Players <i class="bi bi-arrow-right-circle-fill"></i>
                     </a>
                 </div>
@@ -334,7 +342,7 @@
             const addChoiceBtn = document.getElementById('addChoiceBtn');
             const choicesContainer = document.getElementById('choicesContainer'); 
             const congratsModal = new bootstrap.Modal(document.getElementById('congratsModal'));
-           
+            const balance = parseFloat(`<?= $this->_me['user_balance']??0 ?>`);         
 
             // Handle Next Step
             document.querySelectorAll('.next-step-btn').forEach(button => {
@@ -361,11 +369,12 @@
                 const choiceDiv = document.createElement('div');
                 choiceDiv.className = 'mb-3 choice-input-group';
                 choiceDiv.innerHTML = `
-            <label class="form-label text-light fw-medium">Choice ${choiceCount}</label>
+            <label class="form-label text-light fw-medium">Choice ${choiceCount} <span class="text-danger">*</span></label>
             <div class="input-group">
                 <span class="input-group-text bg-dark text-warning border-secondary"><i class="fa-solid fa-check"></i></span>
-                <input type="text" class="form-control bg-secondary text-white border-0 py-2" name="choices[]" placeholder="e.g., Draw / Rematch" required>
+                <input required type="text" class="form-control bg-secondary text-white border-0 py-2" name="choices[]" placeholder="e.g., Draw / Rematch" required>
                 <button type="button" class="btn btn-outline-danger remove-choice-btn"><i class="fa-solid fa-trash"></i></button>
+                <div class="invalid-feedback">Please enter a choice.</div>
             </div>
         `;
                 choicesContainer.appendChild(choiceDiv);
@@ -448,39 +457,64 @@
             const submitGameBtn = document.querySelector('#submitGameBtn');
             const submitBtnContent = submitGameBtn.innerHTML;
             const feedback = document.querySelector('.feedback');
+            let url = '';
  
             createGameForm.addEventListener('submit', async (e)=> {
                 e.preventDefault();
                 submitGameBtn.disabled = true;
                 submitGameBtn.innerHTML = `<div class="spinner-border"role="status"><span class="visually-hidden">Loading...</span></div>`;
-                feedback.classList.remove('alert', 'alert-danger', 'alert-success');
+                feedback.classList.remove('alert', 'alert-danger', 'alert-success', 'wow', 'fadeInUp');
+                feedback.innerHTML = '';
+                url = '';
 
                 try {
                     const response = await fetch('/myapp/requests', {body:new FormData(createGameForm), method:"POST"});
                     const result = await response.json();
 
-                    if (!response.ok) {
+                    if ( (!response.ok) || (result.error) ) {
+                        url = result.cl || '';
                         throw new Error(result.msg || "Something went wrong please try again");
                     }
 
                     feedback.innerHTML = result.msg;
-                    feedback.classList.add('alert', 'alert-success');
+                    feedback.classList.add('alert', 'alert-success', 'wow', 'fadeInUp');
                     document.querySelector('#qualifiedAmountDisplay').textContent = `$${document.querySelector('#stakeCost').value || 0.00}`;
-                    congratsModal.show();
+                    congratsModal.show(); 
+                    document.querySelector('.proceedToInvite').setAttribute('href', result.cl||'#');
                     
                 } catch (error) {
                     showToast(error);
                     feedback.innerHTML = error;
-                    feedback.classList.add('alert', 'alert-danger');
+                    feedback.classList.add('alert', 'alert-danger', 'wow', 'fadeInUp');
+                    if (url.length > 0) {
+                        setTimeout(()=>{ window.location.href=url }, 1500);
+                    }
+
                 } finally {
                     submitGameBtn.disabled = false;
                     submitGameBtn.innerHTML = submitBtnContent;
+                }
+            });
+
+            const stakeCost = document.querySelector('input[name="stake_cost"]');
+            const freeforPromotion = document.querySelector('.freeforPromotion');
+            stakeCost.addEventListener('input', ()=> {
+                const val = parseFloat(`${stakeCost.value || 0}`);
+                freeforPromotion.innerHTML = '';
+                if (val > balance)  {
+                    freeforPromotion.classList.remove('text-muted');
+                    freeforPromotion.classList.add('text-danger');
+                    freeforPromotion.innerHTML = `Insufficient balance. <a href='/user/balance' target='_blank'>Deposit $${val-balance} more.</a>`;
+                } else {
+                    freeforPromotion.classList.add('text-muted');
+                    freeforPromotion.classList.remove('text-danger');
                 }
             })
 
 
 
 
+            //loaded
         });
     </script>
     <?php require 'public/includes/footer.inc.php' ?>

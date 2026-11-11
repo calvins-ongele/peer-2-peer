@@ -620,11 +620,9 @@ class MyApp_Model extends Model
         
         $this->log(Session::get('email') . " reinstated a user on " . date('Y-m-d, H:i:s'), 'User Mgt');
     } 
-	public function deluser() {    
-        
+	public function deluser() {     
 
-        echo $this->_delete('users', 'id ', [$_POST['id']]);  
-        
+        echo $this->_delete('users', 'id ', [$_POST['id']]);   
         $this->log(Session::get('email') . " deleted a user on " . date('Y-m-d, H:i:s'), 'User Mgt');
     }
   
@@ -694,7 +692,49 @@ class MyApp_Model extends Model
     public function peace() { }
 
 	public function CreateAGame() {
-		die($this->_ms(1, "We ar here but noooooo", http_response:400));
+		if (Session::get('userid') === null) 
+			die($this->_ms(1, "Please login to proceed.", third:"/account?return=".urlencode("/games/start")));
+		$me = $this->me();
+
+		if (!is_numeric($_POST['stake_cost']))die($this->_ms(1, "Please provide a numerical value." ));
+
+		//balance
+		$balance = ($me['user_balance']);
+		/**
+		 * No need to restrict at now
+		 * Do it when the choice is made -- so when it's abandoned early, things are easy.
+		 */
+		if ( $balance < $_POST['stake_cost'] ) { 
+			///die( $this->_ms(1,"Insufficient balance to proceed.", http_response:400));
+		}
+
+		$title = CustomFunctions::cleanInput($_POST['title'], 'string'); 
+		$desc = CustomFunctions::cleanInput($_POST['description'], 'string'); 
+		$evidence4Disuputes = CustomFunctions::cleanInput($_POST['evidence_4_disputes'], 'string'); 
+		$canBeProven = CustomFunctions::cleanInput($_POST['can_be_publicly_proven']??0, 'int');
+		$doubleOrNothing = CustomFunctions::cleanInput($_POST['is_double_or_nothing']??0, 'int');
+		$gameType = CustomFunctions::cleanInput($_POST['game_type'], 'string'); 
+		$choices = array_filter($_POST['choices']);
+		if (empty($title))die($this->_ms(1,"Title is required.",http_response:400)); 
+		if ($canBeProven === false)die($this->_ms(1,"Invalid value for public provability.$canBeProven",http_response:400)); 
+		if ($doubleOrNothing === false)die($this->_ms(1,"Invalid value for double or nothing.",http_response:400));
+		if (! in_array($gameType, ['public', 'private']) ) die($this->_ms(1,"Invalid game type", http_response:400));
+		if (empty($choices) || (count($choices)===0 )) die($this->_ms(1,"Provide at least two choices.", http_response:400));
+
+		$url = $this->uniqueUrl('games', 'game_url', substr($_POST['title'],0, 50) );
+		$insert = $this->_insert('games', 'title, description, created_by, can_be_publicly_proven, evidence_4_disputes, is_double_or_nothing, stake_cost, game_type, game_url', [
+			$title, $desc,$me['id'],$canBeProven,$evidence4Disuputes,$doubleOrNothing,$_POST['stake_cost'],$gameType, $url
+		]);
+
+		$lastInsertId = json_decode($insert)->cl;
+		foreach($choices as $choice) {
+			if (empty($choice)) continue; 
+			$choice = CustomFunctions::cleanInput($choice, 'string'); 
+			$this->_insert('choices', 'game_id, choice_details', [$lastInsertId,$choice  ] );
+		}
+
+		echo $this->_ms(0, "Success", third:"/user/games/$url");
+		 
 	}
 
 	
@@ -707,14 +747,71 @@ class MyApp_Model extends Model
 
 		$uuid = CustomFunctions::generate_uuidv4();
 
-		$this->_insert("deposit_request", "amount, coin, user_id, uuid", [
-			$_POST['amount'], $_POST['coin'], Session::get('userid'), $uuid
+		$this->_insert("deposit_request", "amount, coin, user_id, uuid, method", [
+			$_POST['amount'], $_POST['coin'], Session::get('userid'), $uuid, explode(':', $_POST['coin'] )[0] ?? ''
 		]);
 
 		$link = '';
 		if (explode(':', $_POST['coin'] )[0] == 'crypto' ) $link = "/user/balance/deposit/$uuid";
+		if ($_POST['coin'] == 'mpesa' ) { 
+			echo $this->mpesaInit($_POST['amount'], $_POST['phone'] ); die;
+		}
+		if ($_POST['coin'] == 'paypal' ) { 
+			echo $this->paypalInit($_POST['amount'], $_POST['email'] ); die;
+		}
 
 		echo $this->_ms(0, "Success", third:$link);
+	}
+	private function paypalInit(float|int $amount, string $email) {
+		$accessToken = '';   
+        $amount_usd = $amount ?? 0;
+        $amount_kes = $amount * USD_2_KES_RATE; 
+		$payload = [
+			'amount_usd'=> $amount_usd,
+			'amount_kes'=> $amount_kes,
+			'account_number'=>MZIZI_MAIN_AC_NUMBER, //account number
+			'email'=>$email,
+			'user_id'=>Session::get('userid'),
+			'company_name'=>$this->_settings()['site_name']??'',
+			'webhook_url'=>"https://{$_SERVER['SERVER_NAME']}/callback/paypal-deposit-feedback"
+		];
+		$ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, MZIZI_PAYMENT_API . "/p-pal/initiate_paypal_deposit");
+        curl_setopt($ch, CURLOPT_HEADER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            "Content-Type: application/json",
+            "Authorization: Bearer $accessToken"
+        ]); 
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+            
+        return curl_exec($ch);
+	}
+	private function mpesaInit(float|int $amount, string $phone) {
+		$accessToken = ''; 
+
+		$payload = [
+			'amount'=> $amount,
+			'account'=>MZIZI_MAIN_AC_NUMBER, //account number
+			'phone'=>$phone,
+			'user_id'=>Session::get('userid'),
+			'webhook_url'=>"https://{$_SERVER['SERVER_NAME']}/callback/mpesa-deposit-feedback"
+		];
+		$ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, MZIZI_PAYMENT_API . "/mpesa-init/init_c2b");
+        curl_setopt($ch, CURLOPT_HEADER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            "Content-Type: application/json",
+            "Authorization: Bearer $accessToken"
+        ]); 
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+            
+        return curl_exec($ch);
 	}
 
 	
@@ -765,6 +862,48 @@ class MyApp_Model extends Model
         $response = curl_exec($ch); 
         return json_decode($response, 1);
     }
+
+	public function confirmPayplIsDone() {
+		$accessToken = ''; 
+
+		$payload = [
+			'init_id'=> $_POST['init_id'] 
+		];
+		$ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, MZIZI_PAYMENT_API . "/p-pal/verify_deposit");
+        curl_setopt($ch, CURLOPT_HEADER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            "Content-Type: application/json",
+            "Authorization: Bearer $accessToken"
+        ]); 
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+            
+        return curl_exec($ch);
+	}
+
+	public function confirmMpesaIsDone() {
+		$accessToken = ''; 
+
+		$payload = [
+			'order_id'=> $_POST['order_id'] 
+		];
+		$ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, MZIZI_PAYMENT_API . "/mpesa-init/verify_deposit");
+        curl_setopt($ch, CURLOPT_HEADER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            "Content-Type: application/json",
+            "Authorization: Bearer $accessToken"
+        ]); 
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+            
+        return curl_exec($ch);
+	}
 
      
 

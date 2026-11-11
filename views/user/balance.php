@@ -2,11 +2,36 @@
 <html lang="en">
 <head>
     <?php require 'public/includes/header.inc.php' ?>
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"> 
     <style>
         .text-muted {
             color:whitesmoke !important;
 
         } 
+        
+        /* Qualified Popup Modal Styling */
+        .congrats-modal-header {
+            background: linear-gradient(135deg, var(--body-primary-background) 0%, var(--accent-color) 100%);
+            color: white;
+            border-radius: 1rem 1rem 0 0;
+            padding: 2.5rem 1.5rem 1.5rem 1.5rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .congrats-badge-icon {
+            width: 70px;
+            height: 70px;
+            background: #ffffff;
+            color: var(--body-primary-background);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2rem;
+            margin: 0 auto 1rem auto;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+        }
     </style>
 </head>
 <body class="tt-magic-cursor">
@@ -26,7 +51,7 @@
                 <div class="col-lg-3 col-12"></div>
                 <div class="col-lg-6 col-12">
                     <!-- Contact Form Section Start -->
-                    <div class="alert" data-wow-delay="0.50s">
+                    <div class="alert" data-wow-delay="0.50s" id="mainBody">
                         <!-- Section Ttile start -->
                         <div class="section-title text-lg-start text-center"> 
                             <h2 class="wow fadeInUp" data-wow-delay="0.50s">Add funds</h2>
@@ -119,11 +144,41 @@
 
     <!-- Contact Us Page End -->
 
+    
+
+       <!-- COLORFUL CONGRATULATIONS RESULT MODAL -->
+        <div class="modal fade" id="congratsModal" tabindex="-1"  data-bs-backdrop="static" data-bs-keyboard="false"  aria-hidden="true">
+    
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg overflow-hidden" style="border-radius: 1rem;">
+                <div class="congrats-modal-header">
+                    <div class="congrats-badge-icon">
+                        <i class="bi bi-award-fill"></i>
+                    </div>
+                    <h3 class="fw-extrabold mb-1">Congratulations! 🎉</h3>
+                    <p class="mb-0 opacity-90 small">You have successfully deposited money</p>
+                </div>
+                <div class="modal-body text-center p-4">
+                    <span class="text-uppercase fw-bold text-muted small">Wager Amount</span>
+                    <h1 class="display-5 fw-extrabold text-success my-2" id="qualifiedAmountDisplay">$0.00</h1>
+                    <p class="text-muted small mb-4" 
+                        style="color:var(--body-primary-background) !important;">You can proceed to play.</p>
+
+                    <a href="/user/balance" class="qualifiedAmountHref btn btn-action w-100 justify-content-center py-3 fs-6"
+                     style="background:var(--body-primary-background);color:white" >
+                        Superb<i class="bi bi-arrow-right-circle-fill"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
 <script>
     const depositRequest = document.querySelector('#depo');
     const feedback = document.querySelector('.form-feedback');
     const submitBtn = depositRequest.querySelector('[type="submit"]');
     const btnContent = submitBtn.innerHTML; 
+    const feedbackBody = document.querySelector('#mainBody');
 
     depositRequest.addEventListener('submit', async (e)=> {
         e.preventDefault();
@@ -144,9 +199,23 @@
             feedback.classList.add('alert', 'alert-success');
             feedback.innerHTML = result.msg||'Success'; 
 
-            if (result.cl.length > 0) {
-                location.href=`${result.cl}`;
-            } 
+            const pmethod = document.querySelector('input[name="coin"]').value; 
+
+            if ( pmethod == 'mpesa' ) { 
+                startPollingMpesaFeedback(result.ordernumber || '');
+            } // no need
+            if ( pmethod == 'paypal' ) {
+                const initId = result.cl.split('=')[1] ?? '';
+                if (initId.length > 0) startPollingPaypalFeedback(initId);
+                return;
+             } // no need
+
+            //crypto
+            
+            if ( (pmethod.split(':')[0]??'') == 'crypto' )
+                if (result.cl.length > 0) {
+                    location.href=`${result.cl}`;
+                } 
             
         } catch(er) { 
             console.log(er);
@@ -179,6 +248,78 @@
                 element.querySelector('input').required = false;
             }
         });
+    }
+    
+    async function startPollingPaypalFeedback(initId) {
+        let pollingNeded = true;
+        const form = new FormData();
+        form.set('init_id', initId);
+        form.set('csrf_token', `<?= CSRF::get() ?>`);
+        form.set('method', `confirmPayplIsDone`);
+
+        while (pollingNeded) {
+            const response = await fetch('/myapp/requests', {method:"POST", body:form });
+            const result = await response.json();
+            if ( (!respon.ok) || (result.error)){}
+            else {
+                pollingNeded = false;
+                paypalSuccess(result);
+            }
+ 
+        }
+
+    }
+
+    let congratsModal;
+    document.addEventListener('DOMContentLoaded', function() { 
+      congratsModal = new bootstrap.Modal(document.getElementById('congratsModal'));
+      
+        // paypalSuccess({
+        //     error:false,
+        //     msg:"Success",
+        //     amount_usd: 3.5,
+        //     amount_kes:500,
+        //     actually_paid_usd: 3.5
+        // });
+
+    });
+
+    function paypalSuccess(data) { 
+
+        const actual = parseFloat(data.actually_paid_usd || '0.00');
+        const origialAmount = parseFloat(data.amount_usd || '0.00');
+
+        let amount = origialAmount > actual ? actual : origialAmount;  
+        document.querySelector('#qualifiedAmountDisplay').textContent = `$${amount}`;
+
+        congratsModal.show();
+    }
+    async function startPollingMpesaFeedback(orderId) {
+        
+        let pollingNeded = true;
+        const form = new FormData();
+        form.set('order_id', orderId);
+        form.set('csrf_token', `<?= CSRF::get() ?>`);
+        form.set('method', `confirmMpesaIsDone`);
+
+        while (pollingNeded) {
+            const response = await fetch('/myapp/requests', {method:"POST", body:form });
+            const result = await response.json();
+            if ( (!respon.ok) || (result.error)){}
+            else {
+                pollingNeded = false;
+                const base = parseFloat(`<?= USD_2_KES_RATE ?>`);
+                const amount = result.actually_paid_usd;
+                paypalSuccess({
+                    error:false,
+                    msg:"Success",
+                    amount_usd: result.actually_paid_usd / base,
+                    amount_kes:result.actually_paid_usd / base,
+                    actually_paid_usd: result.actually_paid_usd / base
+                });
+            }
+ 
+        }
     }
 
      

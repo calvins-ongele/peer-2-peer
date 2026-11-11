@@ -185,15 +185,17 @@ class Model extends Database {
 		return $this->_get('users', 'user_url',[$url], false  )[1]['id'];
 	}
     
-	protected function _uniq_url($table, $columnurl) {
+	protected function uniqueUrl(string $table, string $column, $title = '') {
+		$url = (!empty($url)) ? CustomFunctions::validUrl($url) : CustomFunctions::randchars(30);
 
-		for ($i = 0; $i < 10000000000; $i++) {
-			$url = rand(101, 1009) . time();
-			if ($this->_get($table, $columnurl, [$url], true )[0] == 0) {
-				return $url;
+		for ($i = 0; $i < 10000000000; $i++) { 
+			if ($this->_get($table, $column, [$url] )[0] == 0) { 
 				break;
 			}
+			$url .= "$i";
 		}
+
+		return $url;
 	}
 	protected function _uniq_p_url($names) {
 		$url = $names;
@@ -342,6 +344,15 @@ class Model extends Database {
 	public function fetch_currencies() {
 		return $this->_get('currencies')[1];
 	}
+	
+	protected function chuckoffAmount($amount = 0, $user = [], $orderUuid = '', $purpose = '', $action='add') {
+		$amount = abs($amount);
+		$newBalance = $action=='add' ? ($user['user_balance'] + $amount) : ($user['user_balance'] - $amount);
+
+		$this->_update('users', 'user_balance', 'id', [$newBalance, $user['id']]);
+		$this->_insert('transaction_history', 'amount, user_id, order_uuid, purpose', [$amount, $user['id'], $orderUuid, $purpose ]);
+	}
+
   
 
     
