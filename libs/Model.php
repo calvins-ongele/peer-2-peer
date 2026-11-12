@@ -186,7 +186,7 @@ class Model extends Database {
 	}
     
 	protected function uniqueUrl(string $table, string $column, $title = '') {
-		$url = (!empty($url)) ? CustomFunctions::validUrl($url) : CustomFunctions::randchars(30);
+		$url = (!empty($title)) ? CustomFunctions::validUrl(substr($title,0, 50)) : CustomFunctions::randchars(30);
 
 		for ($i = 0; $i < 10000000000; $i++) { 
 			if ($this->_get($table, $column, [$url] )[0] == 0) { 
@@ -433,7 +433,7 @@ protected function EmailByResend(
 		$to = array_shift($emails); // First email is the main recipient
 
         $payload = [
-            'from'    => "{$settings['short_name']} <{$settings['send_from']}>",
+            'from'    => "{$settings['site_name']} <{$settings['send_from']}>",
             'to'      => $to,
 			'bcc'     => $emails,
             'subject' => $title,
@@ -536,7 +536,7 @@ protected function EmailByResend(
              
             //$mail->SMTPKeepAlive = true;
          
-            $mail->setFrom($settings['send_from'] , $settings['short_name']);  
+            $mail->setFrom($settings['send_from'] , $settings['site_name']);  
             $i = 0;
             $sentemails = [];
             foreach ($email as $email_row) { 

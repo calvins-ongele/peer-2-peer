@@ -149,7 +149,7 @@
     
     <!-- Bootstrap js file -->
     <script src="/public/js/bootstrap.min.js"></script>
-    <script src="/public/js/custom-functions.js"></script>
+    <script src="/public/js/custom-functions.js?v=<?= CODE_VERSION ?>"></script>
     <!-- Validator js file -->
     <script src="/public/js/validator.min.js"></script>
     <!-- SlickNav js file -->

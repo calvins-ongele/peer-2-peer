@@ -41,9 +41,9 @@ class CustomFunctions {
         $pattern = '/\b(' . implode('|', array_map('preg_quote', $words)) . ')\b/i';
         return (bool) preg_match($pattern, $sentence);
     }
-    public static function replaceLinksWithAnchors($text) {
+    public static function replaceLinksWithAnchors(string $text) {
         return preg_replace_callback(
-            '#\bhttps?://[^\s<>()]+#i',
+            '#\bhttps?://[^\s<>()]+#i', 
             function($matches) {
                 $url = $matches[0];
                 $host = parse_url($url, PHP_URL_HOST);
@@ -57,6 +57,33 @@ class CustomFunctions {
             },
             $text
         );
+    }
+    public static function linkify(string $text):string {
+        $escapedText = htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+        $pattern = '/\b(?:https?:\/\/|www\.)[^\s<]+/i';
+
+        return preg_replace_callback($pattern, function($matches) {
+            $url = $matches[0];
+            $trailingPunctuation = '';
+
+            if (preg_match('/[.,!?;:)\]]+$/', $url, $punctuationMatches)) {
+                $trailingPunctuation = $punctuationMatches[0];
+                $url = substr($url, 0, -strlen($trailingPunctuation));
+            }
+
+            $href = stripos($url, 'www.') === 0 ? 'https://'.$url : $url;
+
+            if (filter_var($href, FILTER_VALIDATE_URL)) {
+                return sprintf(
+                    '<a href="%s" target="_blank" rel="noopener noreferrer">%s</a>%s', 
+                    $href,
+                    $url,
+                    $trailingPunctuation
+                );
+            }
+
+            return $matches[0];
+        }, $escapedText );
     }
 	
     public static function formatPhone(string $phone): string {
@@ -415,7 +442,18 @@ class CustomFunctions {
         
         return substr($phone, 0, $how_many) . str_repeat('*', strlen($phone) - $how_many) . substr($phone, -2);
     }
-    
+    public static function maskString(string $text, int $visibleStart = 0, int $visibleEnd = 4, string $maskChar = '*'): string {
+        $length = strlen($text);
+        
+        // Return original if string is too short to mask
+        if ($length <= ($visibleStart + $visibleEnd)) {
+            return $text;
+        }
+
+        $maskLength = $length - $visibleStart - $visibleEnd;
+        return substr_replace($text, str_repeat($maskChar, 3), $visibleStart, $maskLength);
+    }
+
     public static function maskEmail($email, $how_many = 4) {  
         $parts = explode('@', $email);
         
@@ -627,6 +665,27 @@ public static function mainTemplate() {
         </body>
         </html>
     ";
+}
+
+public static function playerStatus($status) {
+    switch ($status) {
+        case 'pending':
+            return [
+                'icon'=>'fa-spinner fa-spin',
+                'color'=>'bg-warning text-white border-warning'
+            ];
+        case 'accepted':
+            return [
+                'icon'=>'fa-circle-check',
+                'color'=>'bg-success text-white'
+            ];
+        
+        default: //danger
+            return [
+                'icon'=>'fa-times-circle',
+                'color'=>'bg-danger text-white'
+            ];
+    }
 }
 	 
  

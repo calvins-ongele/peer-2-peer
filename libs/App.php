@@ -2,15 +2,15 @@
 #[AllowDynamicProperties]
 class App {
 
-	private $_url = null;
-	private $_controller = null;
+	private mixed $_url = null;
+	private mixed $_controller = null;
 
 	private $_controllerPath = 'controllers/';
 	private $_modelPath = 'model/'; 
 	private $_errorFile = 'err.php';
 	private $_defaultFile = 'index.php';
-	private $excluded_classes = array('blog','read','legal', 'file'  );
-	private $excluded_methods = array('categories',  'search', 'faq');
+	private $excluded_classes = array('blog','read','legal', 'file','games'  );
+	private $excluded_methods = array('categories',  'search', 'faq', 'start');
 
     /**
      * Starts the App

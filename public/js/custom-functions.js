@@ -2,11 +2,19 @@ async function copy(item) {
   try {
     await navigator.clipboard.writeText(item);
     console.log(`"${item}" copied to cliboard.`);
-    showToast(`"${item}" copied to cliboard.` );
+    showToast(`"${item}" copied to cliboard.`, 'bg-success' );
+    showSucceededMsg();
   } catch (error) {
     fallbackCopyTextToClipboard(item);
   }
 } 
+function showSucceededMsg() {
+   const msg = document.getElementById('copySuccessMsg');
+    if(msg) {
+    msg.classList.remove('d-none');
+    setTimeout(() => msg.classList.add('d-none'), 3000);
+    }
+}
 
 function fallbackCopyTextToClipboard(text) {
   const textArea = document.createElement("textarea");
@@ -16,6 +24,8 @@ function fallbackCopyTextToClipboard(text) {
   try {
     document.execCommand("copy");
     console.log("Fallback: Copying text command was successful");
+    showToast(`"${item}" copied to cliboard.`, 'bg-success' );
+    showSucceededMsg()
   } catch (err) {
     console.error("Fallback: Oops, unable to copy", err);
   }

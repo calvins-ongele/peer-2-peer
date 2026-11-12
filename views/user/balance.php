@@ -1,3 +1,8 @@
+<?php
+    $url = 'abc d efg h iks';
+    $url = (!empty($url)) ? CustomFunctions::validUrl($url) : CustomFunctions::randchars(30);
+    //echo $url;
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -50,11 +55,17 @@
 
                 <div class="col-lg-3 col-12"></div>
                 <div class="col-lg-6 col-12">
+                    
                     <!-- Contact Form Section Start -->
                     <div class="alert" data-wow-delay="0.50s" id="mainBody">
+                         
                         <!-- Section Ttile start -->
-                        <div class="section-title text-lg-start text-center"> 
+                        <div class="section-title text-lg-start text-center d-flex justify-content-between"> 
                             <h2 class="wow fadeInUp" data-wow-delay="0.50s">Add funds</h2>
+
+                             <div class="wow fadeInUp">
+                                <a href="/user/balance/withdraw" class="btn btn-primary " >Withdraw Funds</a>
+                            </div>
                         </div>
                         <!-- Section Title end -->
 

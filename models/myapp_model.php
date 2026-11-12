@@ -40,7 +40,7 @@ class MyApp_Model extends Model
 		 
         
 		if(!empty($_POST['return'])) {
-			$await_login = $_POST['return'];
+			$await_login = htmlspecialchars( $_POST['return'], ENT_QUOTES, 'UTF-8' );
 		}
 		
 		$key = '';
@@ -57,11 +57,10 @@ class MyApp_Model extends Model
 
 		if (!CustomFunctions::validEmail($_POST['email'])) {
 		    echo $this->_ms(true, 'Invalid email');die;
-		}
-
-		 $get = $this->_get('users', 'user_email', [$_POST['email']]) ;
-		 if ($get[0] > 0) {
-		     die($this->_ms(true, "Email registered already. Please use another email or reset password if it's yours."));
+		} 
+		 $get = $this->_get('users', 'user_email, username', [$_POST['email'], $_POST['username']], 1, '', 'or') ;
+		 if ( ($get[0] > 0) && ($get[1]['user_status'] != 'invited') ) {
+		     die($this->_ms(true, "Username or Email registered already."));
 		 } 
 		 
 		if ( ! CustomFunctions::isStrongPassword($_POST['pass']) ) {  
@@ -69,34 +68,39 @@ class MyApp_Model extends Model
 		        die($this->_ms(true, "Password is weak. Please ensure it is at least 8 characters, a capital and small letter,a special character and finally a number."));
 		}
 
-
-		 
-		 $insert = $this->_insert('users', 'user_full_name, user_email, user_pass ', [
+		if ( empty($get[1]) ) {
+			$insert = $this->_insert('users', 'username, user_email, user_pass ', [
 		     $_POST['name']??'', $_POST['email'], password_hash($_POST['pass'], PASSWORD_DEFAULT)  ]);
-		 
-            $user = $this->_get('users', 'id ', [ json_decode($insert)->cl  ], false);
-  
-            Session::set('role', $user[1]['user_role']);
-            Session::set('userid', $user[1]['id']);    
-            
-            $this->log("{$user[1]['user_email']} signed up into the system at " . date('Y-m-d, H:i:s'), 'Account' ); 
-			$await_login = Session::get('await_login') != null ? Session::get('await_login') : '/user';
-			
-			if ( ($this->_settings()['verify_mail']  ) && (($user[1]['user_email_verified']??0) == 0) ) {
-			    $await_login = "/account/verify-email?email={$user[1]['user_email']}";
-			}
+			 $user = $this->_get('users', 'id ', [ json_decode($insert)->cl  ], false);
+		} else {
+			$insert = $this->_update('users', 'username, user_pass, user_status ', 'user_email', [
+		     $_POST['name']??'', password_hash($_POST['pass'], PASSWORD_DEFAULT), 'active', $_POST['email']  ]);
+			 $user = $get;
+		}
+ 
+		  
 
-			if(!empty($_POST['return'])) {
-				$await_login = $_POST['return'];
-			}
+		Session::set('role', $user[1]['user_role'] ?? 'Customer');
+		Session::set('userid', $user[1]['id'] ?? 0);    
+		
+		$this->log("{$user[1]['user_email']} signed up into the system at " . date('Y-m-d, H:i:s'), 'Account' ); 
+		$await_login = Session::get('await_login') != null ? Session::get('await_login') : '/user';
+		
+		if ( ($this->_settings()['verify_mail']  ) && (($user[1]['user_email_verified']??0) == 0) ) {
+			$await_login = "/account/verify-email?email={$user[1]['user_email']}";
+		}
 
-			$key = '';
-			if (!empty($_POST['remember'])) {
-				$key = CustomFunctions::randchars(40,1);
-				$this->rememberUser($user[1]['id'], $key);
-			}
-			
-            echo $this->_ms(false,  "Account was successfully created", third: [($await_login), $key]);
+		if(!empty($_POST['return'])) {
+			$await_login = htmlspecialchars( $_POST['return'], ENT_QUOTES, 'UTF-8' );
+		}
+
+		$key = '';
+		if (!empty($_POST['remember'])) {
+			$key = CustomFunctions::randchars(40,1);
+			$this->rememberUser($user[1]['id'], $key);
+		}
+		
+		echo $this->_ms(false,  "Account was successfully created", third: [($await_login), $key]);
     }
 
 
@@ -142,7 +146,8 @@ class MyApp_Model extends Model
 				$body .= "<p>Dear user, <br>";
 				$body .= "Click button below to reset your password before a 2 hour expiry. Ignore if you didn't make this request.";
 				$body .= "<br><br><a  href='$url'><button style='background:green; color:white; border-radius: 5px; padding: 10px;'>  Reset Password  </button></a><br><br></div>";
-				CustomFunctions::SendMail($_POST['email'], "Password Reset Request | {$this->_settings()['site_name']}", $body, $this->_settings() );
+				
+				$this->sendTheEmail(recipient:$_POST['email'], title:"Password Reset Request | {$this->_settings()['site_name']}", body:$body);
 				
 			 
 				echo $this->_ms(false, "Check your email to continue. Check your spam folder if you don't see our mail!");die;
@@ -212,7 +217,7 @@ class MyApp_Model extends Model
         //header('Content-Type:text/html;charset=utf-8');
         echo json_encode( array('error'=>false, 'msg'=>'Sent successfully' ) );
          
-        CustomFunctions::SendMail($emails, $_POST['subject'], "<div style='padding: 5px;'> {$_POST['msg']} </div>", $this->_settings() );
+				$this->sendTheEmail(recipient:implode(',', $emails), title:$_POST['subject'], body:"<div style='padding: 5px;'> {$_POST['msg']} </div>"); 
     }
     public function new_sms_send() {
         //CustomFunctions::SendSMS($_POST['desc'], $_POST['tel']);
@@ -390,8 +395,10 @@ class MyApp_Model extends Model
              "Hi {$_POST['fname']}, <br> Thank you for reaching out. We received your query and would get back as soon as possible. "
              
              ];
-       
-         CustomFunctions::SendMail([$this->_settings()['email'], $_POST['email']  ], "New Contact Form/Enquiry", $msgs, $this->_settings() );
+
+			 
+				$this->sendTheEmail(recipient:"{$this->_settings()['email']},{$_POST['email']}", title:"New Contact Form/Enquiry", body:$msgs[0]);
+        
          
          $this->log( "{$_POST['email']} sent an enquiry at " . date('Y-m-d, H:i:s'), 'Company' );
 
@@ -442,7 +449,7 @@ class MyApp_Model extends Model
 		}
 		  $pass = $_POST['pass']; //CustomFunctions::randchars(5);
 		 
-		 $this->_insert('users', 'user_email, user_pass, user_full_name,user_reg_date ', [
+		 $this->_insert('users', 'user_email, user_pass, username,user_reg_date ', [
 		     $_POST['email'], password_hash($pass, PASSWORD_DEFAULT), $_POST['name'], time()  ]);
 		 
            // $user = $this->_get('users', 'user_email ', [ $_POST['email']  ], false);
@@ -485,7 +492,7 @@ class MyApp_Model extends Model
         		 $this->_update('users', 'user_pass', 'id', [password_hash($pass, PASSWORD_DEFAULT), $_POST['id']]);
     		}
 		 
-		 $this->_update('users', 'user_email, user_full_name ', 'id', [ $_POST['email'], $_POST['name'], $_POST['id'] ]);
+		 $this->_update('users', 'user_email, username ', 'id', [ $_POST['email'], $_POST['name'], $_POST['id'] ]);
 		 
             
             
@@ -569,8 +576,9 @@ class MyApp_Model extends Model
 				    "</p>Hi, new subscription alert. <br> Name: {$_POST['fname']} {$_POST['lname']} <br>Email:{$_POST['email']}.</p>",
 				    "</p>Hi {$_POST['fname']}, <br>Thank you for your subscription. We promise to keep your mailbox clean.</p>"
 				    ];
-				
-				 CustomFunctions::SendMail([ $this->_settings()['email'], $_POST['email'] ], "New Subscription Success",  $msgs, $this->_settings() );
+				 
+				 
+				$this->sendTheEmail(recipient:"{$this->_settings()['email']},{$_POST['email']}", title:"New Subscription Success", body:$msgs[0]);
          
          $this->log( "{$_POST['email']} subscribed at " . date('Y-m-d, H:i:s'), 'Company' );
 				
@@ -598,7 +606,9 @@ class MyApp_Model extends Model
             
             $body = "<div>Dear client,<br> Your password was reset for you by the admin.<br> Please login <a href='https://".$_SERVER['HTTP_HOST']."/account'>here</a> with:
                 <p>Email: {$user[1]['user_email']} </p> <p>Email: {$pass} </p> </div>";
-			CustomFunctions::SendMail($user[1]['user_email'], "{$this->_settings()['site_name']} Reset Password" , $body, $this->_settings() );
+			
+			
+			$this->sendTheEmail(recipient:$user[1]['user_email'], title:"{$this->_settings()['site_name']} Reset Password", body:$body );
             
           echo $this->_ms(false, "The user's password was reset and sent to their email.") ; 
 	}
@@ -678,8 +688,9 @@ class MyApp_Model extends Model
 	    foreach ($users as $row) {
 	        $emails[] = $row['st_email'] ;
 	    }
-	    
-	    CustomFunctions::SendMail($emails, $title, $body, $this->_settings() );
+	     
+		
+		$this->sendTheEmail(recipient:implode(',',$emails), title:$title, body:$body );
 	}
 	    
 	public function blog_views() {
@@ -699,14 +710,14 @@ class MyApp_Model extends Model
 		if (!is_numeric($_POST['stake_cost']))die($this->_ms(1, "Please provide a numerical value." ));
 
 		//balance
-		$balance = ($me['user_balance']);
+		//$balance = ($me['user_balance']);
 		/**
 		 * No need to restrict at now
 		 * Do it when the choice is made -- so when it's abandoned early, things are easy.
 		 */
-		if ( $balance < $_POST['stake_cost'] ) { 
-			///die( $this->_ms(1,"Insufficient balance to proceed.", http_response:400));
-		}
+		// if ( $balance < $_POST['stake_cost'] ) { 
+		// 	///die( $this->_ms(1,"Insufficient balance to proceed.", http_response:400));
+		// }
 
 		$title = CustomFunctions::cleanInput($_POST['title'], 'string'); 
 		$desc = CustomFunctions::cleanInput($_POST['description'], 'string'); 
@@ -720,8 +731,9 @@ class MyApp_Model extends Model
 		if ($doubleOrNothing === false)die($this->_ms(1,"Invalid value for double or nothing.",http_response:400));
 		if (! in_array($gameType, ['public', 'private']) ) die($this->_ms(1,"Invalid game type", http_response:400));
 		if (empty($choices) || (count($choices)===0 )) die($this->_ms(1,"Provide at least two choices.", http_response:400));
-
-		$url = $this->uniqueUrl('games', 'game_url', substr($_POST['title'],0, 50) );
+ 
+		$gameId = "game-".rand(1000,1000000);
+		$url = $this->uniqueUrl('games', 'game_url', $gameId );// instead of urls---
 		$insert = $this->_insert('games', 'title, description, created_by, can_be_publicly_proven, evidence_4_disputes, is_double_or_nothing, stake_cost, game_type, game_url', [
 			$title, $desc,$me['id'],$canBeProven,$evidence4Disuputes,$doubleOrNothing,$_POST['stake_cost'],$gameType, $url
 		]);
@@ -735,6 +747,79 @@ class MyApp_Model extends Model
 
 		echo $this->_ms(0, "Success", third:"/user/games/$url");
 		 
+	}
+
+	public function saveYourPlayChoice() {
+		$game = $this->_get('games', '(game_url = ? AND (status = ? OR status = ? ) )', 
+				[$_POST['game_url'], 'in_progress','pending'], 0)[1];
+		if (empty($game)) die($this->_ms(1,"The game selected is either completed or was abandoned. Please try again with another game", http_response:400));
+		$me = $this->me();
+
+		//balance
+		$balance = ($me['user_balance']);
+		if ( $balance < $game['stake_cost'] ) { 
+			die( $this->_ms(1,"Insufficient balance to proceed. You need at least \${$game['stake_cost']}", http_response:400));
+		}
+
+		// the choice must be valid
+		$theChoice = $this->_get('choices', 'id', [$_POST['answer_chosen']], 0)[0];
+		if (empty($theChoice)) die($this->_ms(1,"Please select a valid choice to proceed"));
+
+		// must not have played this game
+		$played = $this->_get('players', 'game_id, player_user_id', [$game['id'], $me['id']], 0)[1];
+
+		if (!empty($played)) {
+			// could have been invited if it was a private game
+			if(!empty($game['answer_chosen'] )) //already played
+				die($this->_ms(1,"You are already a player in this game."));
+
+			$this->_update('players', 'answer_chosen, player_accepted_invitation', 'game_id, player_user_id', [$_POST['answer_chosen'], 'accepted', $game['id'], $me['id']]);
+		} else { // empty, have not played
+			// game must not be private 
+			if($game['game_type'] === 'private') //already played
+				die($this->_ms(1,"This is a private game. Ask the owner to send private invitation before sending link."));
+				
+			// insert
+			$this->_insert('players', 'answer_chosen, player_accepted_invitation, game_id, player_user_id', [$_POST['answer_chosen'], 'accepted', $game['id'], $me['id']]); 
+		}
+
+		$this->chuckoffAmount($game['stake_cost'], $me, '', 'game placement', 'substract');
+
+		echo $this->_ms(0, "Congratulations! You succeeded in joining '{$game['title']}' game. Remember to dispute if you feel unsatisfied with result declaration. Good luck.");
+
+	}
+
+	public function invitePlayer() {
+		$game = $this->_get('games', '(game_url = ? AND (status = ? OR status = ? ) )', 
+				[$_POST['game_url'], 'in_progress','pending'], 0)[1];
+		if (empty($game)) die($this->_ms(1,"The game selected is either completed or was abandoned. Please try again with another game", http_response:400));
+		$me = $this->me();
+
+		$userExists = $this->_get('users', "username, user_email", [ $_POST['username'], $_POST['username'] ], 0, '', 'or' )[1];
+		$userId = $userExists['id'] ?? '';
+		if (empty($userExists)) { //create and send invite
+		 
+			if (! CustomFunctions::validEmail($_POST['username'])) die($this->_ms(1, "The username entered does not belong to any account. So you'll have to use an email to send an invite.", http_response:400));
+ 
+			$insert = $this->_insert("users", "username, user_email, user_status", [ CustomFunctions::randchars(50), $_POST['username'], 'invited' ]);
+			$userId = json_decode($insert)->cl;
+		}
+
+		// has the user played this game
+		$played = $this->_get('players', 'game_id, player_user_id', [$game['id'], $userId ], 0)[1];
+		if (!empty($played)) die($this->_ms(1, "The invited person is already playing the game. Try another one.", http_response:400));
+
+		$this->_insert('players', 'player_accepted_invitation, game_id, player_user_id, invited_by', ['pending', $game['id'], $userId, $me['id']??null ]); 
+
+		$username = $me['username'] ?? 'Someone';
+		$url = "https://{$_SERVER['SERVER_NAME']}/games/{$game['game_url']}?invite={$username}";
+
+		$body = "<p>Hey,<br>{$username} has invited you to play a game with him at {$this->_settings()['site_name']}.
+				    <br>Copy or click the link to proceed. <a href='$url'>$url</a></p>";
+		$this->sendTheEmail("Invitation to play a game", $_POST['username'], $body);
+
+		echo $this->_ms(0, "{$_POST['username']} was successfully invited.");
+
 	}
 
 	

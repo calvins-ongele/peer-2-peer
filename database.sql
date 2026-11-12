@@ -55,10 +55,10 @@ INSERT INTO `settings` (`id`, `name`, `value`) VALUES
 -- -- -- --
 create table users(
   id int auto_increment primary key,
-  username varchar(50) unique,
-  user_full_name varchar(100),
+  username varchar(50) unique, 
   user_email varchar(100) unique,
   user_role varchar(20) default 'Customer',
+  user_status enum('pending', 'active', 'invited') default 'active',
   user_balance decimal(14,2) default 0.00,
   user_pass varchar(255),
 
@@ -271,7 +271,8 @@ create table players(
   answer_chosen int null, -- null when just invited
   is_winner int default 0,
   player_user_id int null,
-  player_accpeted_invitation enum('pending', 'accepted') default 'pending',
+  player_accepted_invitation enum('pending', 'accepted', 'rejected') default 'pending',
+  invited_by int null,
   created_at datetime default current_timestamp(),
   updated_at datetime default current_timestamp() ON Update current_timestamp(),
   unique(game_id, player_user_id),
