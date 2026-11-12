@@ -7,7 +7,7 @@
             color:whitesmoke !important;
 
         } 
-    </style>
+    </style> 
 </head>
 <body class="tt-magic-cursor">
 
@@ -28,41 +28,55 @@
 
     <!-- Contact Us Page End -->
 
-    <script>
-        const loginForm = document.querySelector('#loginForm');
-        const submitBtn = loginForm.querySelector("[type='submit']");
-        const btnContent = submitBtn.innerHTML;
-        const feedback = document.querySelector('#msgSubmit');
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script> 
 
-        loginForm.addEventListener('submit', async (e)=> {
-            e.preventDefault();
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = `<div class="spinner-border"role="status"><span class="visually-hidden">Loading...</span></div>`;
-            feedback.classList.remove('alert', 'alert-danger', 'alert-success'); 
-            feedback.innerHTML = '';
+        async function rejectInvitation(gameId, gameTitle) { 
+            const form = new FormData();
+            form.set('method', 'rejectInvitation');
+            form.set('csrf_token', '<?= CSRF::get() ?>');
+            form.set('game_id', gameId);
+            form.set('title', gameTitle);
+            form.set('game_id', gameId);
+
+            const confirm = await confirmRejection(gameTitle);
+            if (!confirm) return;
             
                 try {
-                    const response = await fetch('/myapp/requests', {body:new FormData(loginForm), method:"POST"});
+                    const response = await fetch('/myapp/requests', {body:form, method:"POST"});
                     const result = await response.json();
 
                     if (!response.ok || (result.error)) {
                         throw new Error(result.msg || "Something went wrong please try again");
                     }
 
-                    feedback.innerHTML = result.msg;
-                    feedback.classList.add('alert', 'alert-success');  
-                    if (result.cl[1].length > 0) { setCookie(`<?= REMEMBER_COOKIE_NAME ?>`, result.cl[1]); } 
-                    if (result.cl[0].length > 0) { window.location.href = result.cl[0]; }
+                    await Swal.fire({title: `Success. ${gameTitle}'s invitation was declined successfully.`, icon: "success" });
+                    showToast( `Success. ${gameTitle}'s invitation was declined successfully.`, 'bg-success'); 
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 500);
+
                     
                 } catch (error) {
-                    showToast(error);
-                    feedback.innerHTML = error;
-                    feedback.classList.add('alert', 'alert-danger');
-                } finally {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = btnContent;
-                }
-        })
+                    showToast(error); 
+                } finally { }
+        }
+
+        async function confirmRejection(gameTitle) {
+            
+              const result = await Swal.fire({
+                title: "Are you sure?",
+                html: `<bold style="font-weight:bold">${gameTitle}'s</bold> invitation will be rejected!`,
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                confirmButtonText: "Yes, I Confirm!",
+                allowOutsideClick:false
+                });
+
+                return result.isConfirmed;
+        }
 
     </script>
 

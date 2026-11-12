@@ -22,8 +22,10 @@ class Model extends Database {
     protected function _ms($error = false, string $ms = '', mixed $third = '', int $http_response = 200 ) {
 		$newms = $error == false ? "Success" : "An errorr occurred";
 
-		 
 		http_response_code($http_response);
+		if (($http_response === 200) && ($error)){
+			http_response_code(400);
+		}
 		 
 		return json_encode(array(
 			"error"=> $error == false ? false : true,//0==false
@@ -350,7 +352,8 @@ class Model extends Database {
 		$newBalance = $action=='add' ? ($user['user_balance'] + $amount) : ($user['user_balance'] - $amount);
 
 		$this->_update('users', 'user_balance', 'id', [$newBalance, $user['id']]);
-		$this->_insert('transaction_history', 'amount, user_id, order_uuid, purpose', [$amount, $user['id'], $orderUuid, $purpose ]);
+		$this->_insert('transaction_history', 'amount, user_id, order_uuid, purpose, dr_cr', 
+			[$amount, $user['id'], $orderUuid, $purpose, $action=='add'?'cr':'dr' ]);
 	}
 
   

@@ -40,6 +40,29 @@ class User_Model extends Model
         return [];
     }
 
+    public function allGames() {
+        $count = "(select count(*) from players p2 where p2.game_id = g.id )"; 
+        $sql = "SELECT g.*,pl.answer_chosen as answer_chosen, choice_details, $count as total_players, is_winner, player_accepted_invitation
+                    FROM games g
+                    LEFT JOIN players pl ON pl.game_id = g.id
+                    LEFT JOIN choices c ON pl.answer_chosen = c.id
+                    WHERE g.created_by = ?
+                    OR EXISTS (
+                        SELECT 1
+                        FROM players p
+                        WHERE p.game_id = g.id
+                            AND p.player_user_id = ? AND p.player_accepted_invitation != 'rejected'
+                    );
+        ";
+        $games = $this->_query("$sql {$this->pagination()}", [Session::get('userid'),Session::get('userid') ] )[1] ?? [];
+        if (empty($games)) return; 
+
+        return [
+            'games'=>$games,
+            'count'=>$this->_query("$sql ", [Session::get('userid'),Session::get('userid') ] )[1]
+        ];
+    }
+
 
 
 

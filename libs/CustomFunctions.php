@@ -400,7 +400,7 @@ class CustomFunctions {
             $date = $date1;
         }
         
-        return CustomFunctions::time_elapsed_string('@' . $date);
+        return CustomFunctions::time_elapsed_string('' . $date);
     }
       
     public static function time_elapsed_string($datetime, $full = false) {
@@ -678,8 +678,7 @@ public static function playerStatus($status) {
             return [
                 'icon'=>'fa-circle-check',
                 'color'=>'bg-success text-white'
-            ];
-        
+            ]; 
         default: //danger
             return [
                 'icon'=>'fa-times-circle',
@@ -688,6 +687,93 @@ public static function playerStatus($status) {
     }
 }
 	 
+public static function gameStatus(string $status) { 
+    switch ($status) {
+        case 'overriden_by_admin':
+            return [
+                'icon'=>'fa-user-lockx fa-bolt-lightning',
+                'bg-color'=>'bg-info text-white border-info',
+                'color'=>'text-info',
+                'text'=> 'Overriden'
+            ];
+        case 'abandoned_after_start':
+            return [
+                'icon'=>'fa-stop-circle',
+                'bg-color'=>'bg-secondary text-white border-secondary',
+                'color'=>'text-secondary ',
+                'text'=> 'Abandoned'
+            ];
+        case 'cancelled_b4_start':
+            return [
+                'icon'=>'fa-times-circle',
+                'bg-color'=>'bg-danger text-white  ',
+                'color'=>'text-danger   ',
+                'text'=> 'Cancelled'
+            ];
+        case 'in_progress':
+            return [
+                'icon'=>'fa-spinner fa-spin',
+                'bg-color'=>'bg-primary text-white border-primary',
+                'color'=>'text-primary ',
+                'text'=> 'In Progress'
+            ];
+        case 'completed':
+            return [
+                'icon'=>'fa-circle-check',
+                'bg-color'=>'bg-success text-white',
+                'color'=>'text-success ',
+                'text'=> 'Completed'
+            ];
+        case 'pending':
+            return [
+                'icon'=>'fa-clock',
+                'bg-color'=>'bg-warning text-white',
+                'color'=>'text-warning ',
+                'text'=> 'Pending'
+            ]; 
+        default: //disputed
+            return [
+                'icon'=>'fa-triangle-exclamation',
+                'bg-color'=>'bg-danger text-white',
+                'color'=>'text-danger ',
+                'text'=> 'Disputed'
+            ];
+    }
+}
+
+public static function winStatus(string $status = 'pending') {
+    switch ($status) {
+        case 'lost':
+            return [
+                'icon'=>'fa-triangle-exclamation',
+                'bg-color'=>'bg-danger text-white',
+                'color'=>'text-danger ',
+                'text'=> 'Lost'
+            ];
+        case 'won':
+            return [
+                'icon'=>'fa-trophy',
+                'bg-color'=>'bg-success text-white',
+                'color'=>'text-success ',
+                'text'=> 'Won'
+            ];
+        case 'pending':
+            return [
+                'icon'=>'fa-hourglass',
+                'bg-color'=>'bg-primary text-white',
+                'color'=>'text-primary ',
+                'text'=> 'Wait..'
+            ];
+        
+        default:
+            return [
+                'icon'=>'fa-question-circle',
+                'bg-color'=>'bg-warning text-white',
+                'color'=>'text-warning ',
+                'text'=> 'Not won'
+            ];
+    }
+}
  
     
 

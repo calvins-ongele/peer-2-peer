@@ -8,6 +8,7 @@ class User extends Controller
     }
 
     public function index() { 
+        $this->view->games = $this->model->allGames();
         $this->view->title = "User";
         $this->view->render("user/index");
     }
@@ -29,6 +30,10 @@ class User extends Controller
         $title = $this->view->game['title'] ?? $this->view->game['game']['title'] ?? 'Games';
         $this->view->title = $title;
         $this->view->render("user/game-details");
+    }
+    public function changepassword() {
+        $this->view->title = "Change Password";
+        $this->view->render('user/change-password');
     }
 
 

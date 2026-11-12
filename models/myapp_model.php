@@ -284,13 +284,13 @@ class MyApp_Model extends Model
     }
     public function changepass() {  
         
-        $me = $this->_get('users', 'id', [Session::get('userid')], false)[1];
+        $me = $this->me();
 
-        if ($_POST['pass1'] != $_POST['pass']) exit($this->_ms(true, "<span class='text-danger'>New password and repeat password must match!</span>"));
+        if ($_POST['pass1'] != $_POST['pass']) exit($this->_ms(true, "New password and repeat password must match!", http_response:400));
         
 		if ( ! CustomFunctions::isStrongPassword($_POST['pass']) ) {  
 		    if ($this->_settings()['strong_password']    )
-		        die($this->_ms(true, "Password is weak. Please ensure it is at least 8 characters, a capital and small letter,a special character and finally a number."));
+		        die($this->_ms(true, "Password is weak. Please ensure it is at least 8 characters, a capital and small letter,a special character and finally a number.", http_response:400));
 		}
 
 
@@ -298,10 +298,10 @@ class MyApp_Model extends Model
             // update
             $this->log( Session::get('email') . " changed their password on " . date('Y-m-d, H:i:s'), 'Settings' );
             
-            $this->_update('users', 'user_pass ', 'id', [ password_hash($_POST['pass1'], PASSWORD_DEFAULT), Session::get('userid') ]);
-           exit($this->_ms(false, "<span class='text-success'>Success. New password saved.</span>"));
+            $this->_update('users', 'user_pass ', 'id', [ password_hash($_POST['pass1'], PASSWORD_DEFAULT), $me['id'] ]);
+           exit($this->_ms(false, "Success. New password saved.", http_response:400));
         }
-        exit($this->_ms(true, "<span class='text-danger'>Incorrect current password!</span>"));
+        exit($this->_ms(true, "Incorrect current password!", http_response:400));
 
      }
      
@@ -750,8 +750,8 @@ class MyApp_Model extends Model
 	}
 
 	public function saveYourPlayChoice() {
-		$game = $this->_get('games', '(game_url = ? AND (status = ? OR status = ? ) )', 
-				[$_POST['game_url'], 'in_progress','pending'], 0)[1];
+		$game = $this->_get('games', '(game_url = ? AND status = ? )', 
+				[$_POST['game_url'], 'pending'], 0)[1]; //only pending can be joined,, progress stops any new entrant
 		if (empty($game)) die($this->_ms(1,"The game selected is either completed or was abandoned. Please try again with another game", http_response:400));
 		$me = $this->me();
 
@@ -821,11 +821,155 @@ class MyApp_Model extends Model
 		echo $this->_ms(0, "{$_POST['username']} was successfully invited.");
 
 	}
+	public function rejectInvitation() {  
+		if ((!is_numeric($_POST['game_id']))) die;
+		echo 
+		$this->_update('players', 'player_accepted_invitation', 'game_id, player_user_id', [$_POST['game_id'],  $this->me()['id'] ]); 
 
-	
+	}
+	public function MatchStatusAction() {
+		$statusOptions = ['completed', 'cancel', 'in_progress', 'disputed' ];
+
+		if ($_POST['status'] === 'disputed') //allow completed only
+			$game = $this->_get('games', 'game_url, status ', [$_POST['game_url'], 'completed'], 0)[1];
+		else 
+			$game = $this->_get('games', '(game_url = ? and (status = ? OR status = ?))', [$_POST['game_url'], 'in_progress', 'pending'], 0)[1];
+
+		if (empty($game)) die($this->_ms(1, "You cannot make the requested change to this game in it's current state. Try another action" ));
+
+		switch ($_POST['status']) {
+			case 'cancel':
+				$players = $this->_get('players', 'game_id', [$game['id']]);
+				if ($players[0] > 1) die($this->_ms(1, "This match has {$players[0]} players. Therefore cannot be cancelled."));
+				$player = $players[1][0]['player_user_id'] ?? 0;
+				if (($players[0] === 1) && (!empty($player)) ) {
+					// refund
+					$this->chuckoffAmount($game['stake_cost'], $this->me($player), purpose:'Refund'  );
+				}
+
+				// cancel 
+				$this->_update('games', 'status', 'id', [ $game['status']==='pending'?'cancelled_b4_start':'abandoned_after_start', $game['id'] ]);
+				die($this->_ms(0, "The match was successfully cancelled and funds refunded as needed."));
+				
+				break;
+			
+			default:
+				# code...
+				break;
+		}
+	}
+
+	public function withdrawalRequest() {
+		if (!is_numeric($_POST['amount'])) die($this->_ms(1, "Invalid payment method", http_response:400));
+		if (!in_array(explode(':', $_POST['coin'] )[0], ['USDT', 'LTC', 'mpesa', 'paypal'] ))die($this->_ms(1, "Invalid payment method", http_response:400));
+
+		
+		$me = $this->me();
+		$uuid = CustomFunctions::generate_uuidv4();
+		//have the balance?
+		if ($_POST['amount'] > $me['user_balance'])
+			die($this->_ms(1, "Insufficient balance to proceed with this transaction.", http_response:400));
+
+		
+		if (explode(':', $_POST['coin'] )[0] === 'crypto') {
+			if (empty($_POST['network']) || empty($_POST['address']))
+				die($this->_ms(1, "Wallet address and network are both required to fulfill a crypto payment.", http_response:400));
+
+		// add to quueu, manually handle for now
+		$this->_insert("deposit_request", "amount, coin, user_id, uuid, method, is_withdrawal", [
+			$_POST['amount'], $_POST['coin'], Session::get('userid'), $uuid, explode(':', $_POST['coin'] )[0] ?? '', 1
+		]);
+
+		}
+
+		//
+		if ($_POST['coin'] === 'paypal') {
+			
+			if ($_POST['coin'] === 'paypal') {
+				if (! CustomFunctions::validEmail($_POST['email'])  )
+					die($this->_ms(1, "Email address is required to fulfill a Paypal payment.", http_response:400)); 
+			}
+			$feedback =  $this->paypalToCustomInit([ 'amount_usd'=>$_POST['amount'], 'email'=>$_POST['email'] ]);
+
+			// if success
+			if (!json_decode($feedback)->error) {
+				$this->chuckoffAmount($_POST['amount'] + 1, $me, $uuid, 'paypal payment', 'sub'  );
+			}
+
+			echo $feedback;
+
+		}
+		
+		if ($_POST['coin'] === 'mpesa') {
+			if ( empty($_POST['phone'])  )
+				die($this->_ms(1, "Phone is required to fulfill an Mpesa payment.", http_response:400)); 
+
+			$this->_insert("deposit_request", "amount, coin, user_id, uuid, method, is_withdrawal", [
+				$_POST['amount'], $_POST['coin'], Session::get('userid'), $uuid, explode(':', $_POST['coin'] )[0] ?? '', 1
+			]);
+			echo $this->mpesaToCustomInit([ 'amount_usd'=>$_POST['amount'], 'phone'=>$_POST['phone'], 'id'=>$uuid ]);
+		}
+
+	}
+	private function mpesaToCustomInit($initDetails = []) {
+		$accessToken = ''; 
+		$amountKes = $initDetails['amount_usd'] * KES_2_USD_RATE;
+
+		$payload = [
+			'pin'=> MZIZI_PAYMENT_API,
+			'amount'=>$amountKes, //account number
+			'account_number'=>MZIZI_MAIN_AC_NUMBER,
+			'phone'=> $initDetails['phone'],
+			'withdrawal_type'=>'phone', //only phone will be useful here
+			'authenticated'=>0,
+			'paybill'=>'',
+			'till'=>'',
+			'paybill_account_number'=>'' ,
+			'webhook_url'=>"https://{$_SERVER['SERVER_NAME']}/callback/mpesa-withdrawal-feedback",
+			'user_identifyer'=>$initDetails['id']
+		];
+		$ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, MZIZI_PAYMENT_API . "/mpesa-init/withdraw_b2c");
+        curl_setopt($ch, CURLOPT_HEADER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            "Content-Type: application/json",
+            "Authorization: Bearer $accessToken"
+        ]); 
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+            
+        return curl_exec($ch);
+	}
+	private function paypalToCustomInit($initDetails = []) {
+		$accessToken = ''; 
+		$amountKes = $initDetails['amount_usd'] * KES_2_USD_RATE;
+
+		$payload = [
+			'amount_usd'=> $initDetails['amount_usd'],
+			'amount_kes'=>$amountKes, //account number
+			'account_number'=>MZIZI_MAIN_AC_NUMBER,
+			'email'=>$initDetails['email'],
+			'company_name'=>$this->_settings()['site_name']
+		];
+		$ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, MZIZI_PAYMENT_API . "/p-pal/withdraw_b2c");
+        curl_setopt($ch, CURLOPT_HEADER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            "Content-Type: application/json",
+            "Authorization: Bearer $accessToken"
+        ]); 
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+            
+        return curl_exec($ch);
+	}
 	public function depositRequest() {
 		if (!is_numeric($_POST['amount'])) die($this->_ms(1, "Invalid amount", http_response:400));
-		if (!in_array($_POST['coin'], ['USDT', 'LTC', 'mpesa', 'paypal'] ))die($this->_ms(1, "Invalid payment method", http_response:400));
+		if (!in_array(explode(':', $_POST['coin'] )[0], ['USDT', 'LTC', 'mpesa', 'paypal'] ))die($this->_ms(1, "Invalid payment method", http_response:400));
 
 		if (($_POST['coin'] === 'mpesa') && empty($_POST['phone'])) die($this->_ms(1,'Invalid phone number',http_response:400)); 
 		if (($_POST['coin'] === 'paypal') && empty($_POST['email'])) die($this->_ms(1,'Invalid paypal email',http_response:400)); 

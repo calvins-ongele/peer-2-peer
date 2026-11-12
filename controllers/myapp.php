@@ -24,8 +24,7 @@ class MyApp extends Controller {
     public function new_email_send() {$this->model->new_email_send(); 	} 
     public function new_sms_send() {$this->model->new_sms_send(); 	}  
     public function edituser() {$this->model->edituser(); 	} 
-    public function update_company() {$this->model->update_company(); 	}   
-    public function changepass() {$this->model->changepass(); 	}  
+    public function update_company() {$this->model->update_company(); 	}    
     public function deleteticket() {$this->model->deleteticket(); 	} 
     public function closeticket() {$this->model->closeticket(); 	} 
     public function del_blog() {$this->model->del_blog(); 	}   

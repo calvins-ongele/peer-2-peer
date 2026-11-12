@@ -37,6 +37,10 @@
             margin: 0 auto 1rem auto;
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
         }
+        input::placeholder {
+            font-style: italic;
+            font-size: 11px;
+        }
     </style>
 </head>
 <body class="tt-magic-cursor">
@@ -60,18 +64,21 @@
                     <div class="alert" data-wow-delay="0.50s" id="mainBody">
                          
                         <!-- Section Ttile start -->
-                        <div class="section-title text-lg-start text-center d-flex justify-content-between"> 
+                        <div class="section-title-custom d text-lg-start text-center d-flex justify-content-between"> 
                             <h2 class="wow fadeInUp" data-wow-delay="0.50s">Instantly withdraw funds</h2>
  
                         </div>
+                         <div class="wow fadeInUp" >
+                            <p class="text-danger " style="font-size:10px">NOTE: We will take no responsibility if money is lost as a result of incorrect payment details.</p>
+                         </div>
                         <!-- Section Title end -->
 
                         <!-- Contact Form start -->
-                        <section class="contact-form wow fadeInUp" data-wow-delay="0.75s">
+                        <section class="mt-4 contact-form wow fadeInUp" data-wow-delay="0.75s">
  
                          <form id="depo">
                             <input type="hidden" name="csrf_token" value="<?= CSRF::get() ?>" ?>
-                            <input type="hidden" name="method" value="depositRequest" ?>
+                            <input type="hidden" name="method" value="withdrawalRequest" ?>
 
 
                              <div>
@@ -115,6 +122,14 @@
                              <div class="mt-3 d-none relevantFields" rel="paypal">
                                  <label class="block text-sm font-medium mb-2">Paypal Email </label>
                                  <input placeholder="example@email.com" type="email" name="email" required="required" class="form-control" > <!---->
+                             </div>
+                             <div class="mt-3 d-none relevantFields" rel="crypto">
+                                 <label class="block text-sm font-medium mb-2">Wallet Address </label>
+                                 <input placeholder="eg 0x71C7656EC7ab88b098defB751B7401B5f6d8976F" type="address" name="address" required="required" class="form-control" > <!---->
+                             </div>
+                             <div class="mt-3 d-none relevantFields" rel="crypto"> <!---TODO -- add selectable networks available ---->
+                                 <label class="block text-sm font-medium mb-2">Network </label>
+                                 <input placeholder="eg ERC-20" type="text" name="network" required="required" class="form-control" > <!---->
                              </div>
 
 
@@ -164,12 +179,12 @@
                         <i class="bi bi-award-fill"></i>
                     </div>
                     <h3 class="fw-extrabold mb-1">Congratulations! 🎉</h3>
-                    <p class="mb-0 opacity-90 small">You have successfully deposited money</p>
+                    <p class="mb-0 opacity-90 small">You have successfully transacted</p>
                 </div>
                 <div class="modal-body text-center p-4">
                     <span class="text-uppercase fw-bold text-muted small">Wager Amount</span>
                     <h1 class="display-5 fw-extrabold text-success my-2" id="qualifiedAmountDisplay">$0.00</h1>
-                    <p class="text-muted small mb-4" 
+                    <p class="text-muted small mb-4 text-feedback" 
                         style="color:var(--body-primary-background) !important;">You can proceed to play.</p>
 
                     <a href="/user/balance" class="qualifiedAmountHref btn btn-action w-100 justify-content-center py-3 fs-6"
@@ -188,6 +203,13 @@
     const btnContent = submitBtn.innerHTML; 
     const feedbackBody = document.querySelector('#mainBody');
 
+    
+    let congratsModal;
+    document.addEventListener('DOMContentLoaded', function() { 
+      congratsModal = new bootstrap.Modal(document.getElementById('congratsModal')); 
+
+    });
+
     depositRequest.addEventListener('submit', async (e)=> {
         e.preventDefault();
         submitBtn.disabled = true;
@@ -199,31 +221,24 @@
             const req = await fetch('/myapp/requests', {method:"POST", body:form});
             const result = await req.json();
             feedback.classList.remove('alert', 'alert-success', 'alert-danger');
-
+ 
+            
             if ((!req.ok) || result.error) {
                 throw new Error(result.msg || "Something went wrong. Please try again.");
             }
             
             feedback.classList.add('alert', 'alert-success');
             feedback.innerHTML = result.msg||'Success'; 
+            const amount = document.querySelector('input[name="amount"]').value ?? 0;
 
-            const pmethod = document.querySelector('input[name="coin"]').value; 
-
-            if ( pmethod == 'mpesa' ) { 
-                startPollingMpesaFeedback(result.ordernumber || '');
-            } // no need
-            if ( pmethod == 'paypal' ) {
-                const initId = result.cl.split('=')[1] ?? '';
-                if (initId.length > 0) startPollingPaypalFeedback(initId);
-                return;
-             } // no need
-
-            //crypto
-            
-            if ( (pmethod.split(':')[0]??'') == 'crypto' )
-                if (result.cl.length > 0) {
-                    location.href=`${result.cl}`;
-                } 
+             paymentSuccess({
+                error:false,
+                msg:result.msg||"Success",
+                amount_usd: amount,
+                amount_kes:500,
+                actually_paid_usd: amount
+            });
+           
             
         } catch(er) { 
             console.log(er);
@@ -243,12 +258,13 @@
         }); 
     });
 
-    function showRelevantFields(type) {
+    function showRelevantFields(type) {  
+        const methodType = type.split(':')[0] ?? '';
         const fields = document.querySelectorAll('.relevantFields');
         fields.forEach((element)=> {
             const rel = element.getAttribute('rel');
 
-            if (rel === type) {
+            if (rel === methodType) {
                 element.classList.remove('d-none');
                 element.querySelector('input').required = true;
             } else {
@@ -258,77 +274,20 @@
         });
     }
     
-    async function startPollingPaypalFeedback(initId) {
-        let pollingNeded = true;
-        const form = new FormData();
-        form.set('init_id', initId);
-        form.set('csrf_token', `<?= CSRF::get() ?>`);
-        form.set('method', `confirmPayplIsDone`);
-
-        while (pollingNeded) {
-            const response = await fetch('/myapp/requests', {method:"POST", body:form });
-            const result = await response.json();
-            if ( (!respon.ok) || (result.error)){}
-            else {
-                pollingNeded = false;
-                paypalSuccess(result);
-            }
+  
+    function paymentSuccess(data) { 
  
-        }
-
-    }
-
-    let congratsModal;
-    document.addEventListener('DOMContentLoaded', function() { 
-      congratsModal = new bootstrap.Modal(document.getElementById('congratsModal'));
-      
-        // paypalSuccess({
-        //     error:false,
-        //     msg:"Success",
-        //     amount_usd: 3.5,
-        //     amount_kes:500,
-        //     actually_paid_usd: 3.5
-        // });
-
-    });
-
-    function paypalSuccess(data) { 
-
-        const actual = parseFloat(data.actually_paid_usd || '0.00');
         const origialAmount = parseFloat(data.amount_usd || '0.00');
-
-        let amount = origialAmount > actual ? actual : origialAmount;  
-        document.querySelector('#qualifiedAmountDisplay').textContent = `$${amount}`;
+  
+        document.querySelector('#qualifiedAmountDisplay').textContent = `$${origialAmount}`;
+        document.querySelector('.text-feedback').innerHTML = data.msg || "Your payment was successfully initiated."
 
         congratsModal.show();
     }
-    async function startPollingMpesaFeedback(orderId) {
-        
-        let pollingNeded = true;
-        const form = new FormData();
-        form.set('order_id', orderId);
-        form.set('csrf_token', `<?= CSRF::get() ?>`);
-        form.set('method', `confirmMpesaIsDone`);
 
-        while (pollingNeded) {
-            const response = await fetch('/myapp/requests', {method:"POST", body:form });
-            const result = await response.json();
-            if ( (!respon.ok) || (result.error)){}
-            else {
-                pollingNeded = false;
-                const base = parseFloat(`<?= USD_2_KES_RATE ?>`);
-                const amount = result.actually_paid_usd;
-                paypalSuccess({
-                    error:false,
-                    msg:"Success",
-                    amount_usd: result.actually_paid_usd / base,
-                    amount_kes:result.actually_paid_usd / base,
-                    actually_paid_usd: result.actually_paid_usd / base
-                });
-            }
- 
-        }
-    }
+
+    
+    
 
      
     

@@ -74,6 +74,7 @@ create table deposit_request(
   amount_paid varchar(50),
   coin varchar(20),
   user_id int not null,
+  is_withdrawal int default 0,
   method enum('mpesa', 'paypal', 'crypto') default 'mpesa',
   status enum('pending', 'completed', 'rejected') default 'pending',
   uuid varchar(50) default uuid(), 
@@ -91,6 +92,7 @@ create table transaction_history(
   uuid varchar(50) default uuid(),
   order_uuid varchar(50),
   purpose varchar(100),
+  dr_cr enum('cr', 'dr'),
   created_at datetime default current_timestamp(),
   updated_at datetime default current_timestamp() on update current_timestamp(),
   foreign key (user_id) references users(id) on delete cascade
@@ -246,7 +248,7 @@ CREATE TABLE games(
   stake_cost decimal(14,2) default 0.00, -- enforcing minimum could hinder free promotions
   game_type enum('public', 'private') default 'private',
   game_url varchar(100),
-  status enum('completed', 'abandoned_after_start', 'cancelled_b4_start', 'overriden_by_admin','pending', 'in_progress' ) default 'pending',
+  status enum('completed', 'abandoned_after_start', 'cancelled_b4_start', 'overriden_by_admin','pending', 'in_progress','disputed' ) default 'pending',
   created_at datetime default current_timestamp(),
   updated_at datetime default current_timestamp() ON Update current_timestamp(),
   foreign key (created_by) references users(id) on delete set null

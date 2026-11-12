@@ -40,6 +40,19 @@ class Callback_Model extends Model
         $this->chuckoffAmount( ($final_amount/USD_2_KES_RATE), $this->me($data['user_id']) );
 
     }
+    public function mpesawithdrawalfeedback() {
+        
+        $rawInput = file_get_contents("php://input");
+        $data = json_decode($rawInput,1) ?? [];
+        $uuid = $data['cl']['user_id'] ?? 0;
+
+        $data = $this->_get("deposit_request", "uuid ", [ $uuid ], 0)[1];
+        if (empty($data)) die;
+
+        $this->chuckoffAmount( $data['amount']??0, $this->me($data['user_id']), $uuid, 'mpesa payment', 'sub' );
+
+
+    }
 
 
 

@@ -34,165 +34,77 @@
         <!-- Tab Contents -->
         <div class="tab-content" id="gameStatusTabsContent">
             <div class="tab-pane fade show active" id="content-all" role="tabpanel">
-                <div class="row g-4">
+                <div class="row g-4"> <?php //echo "<pre>";print_r($this->games); echo"</pre>"; ?>
                     
+                   <?php foreach($this->games['games'] as $index => $game ) {  
+                        $gameStatus = CustomFunctions::gameStatus( $game['status']); 
+                        $status = '';
+                        if ((($game['status'] == 'completed')||($game['status'] == 'overriden_by_admin')) && ($game['is_winner']) ){$status = 'won';}
+                        if ((($game['status'] == 'completed')||($game['status'] == 'overriden_by_admin')) && (!$game['is_winner']) ){$status = 'lost';}
+                        if (($game['status'] == 'pending') || ($game['status'] == 'in_progress') || ($game['status'] == 'disputed')){$status = 'pending';}
+                        $winStatus = CustomFunctions::winStatus( $status );
+                    ?>
                     <!-- CARD 1: Active Match (In Progress) -->
                     <div class="col-lg-6 col-12">
                         <div class="card box-border-linear-gradient bg-dark text-light border-0 rounded-4 h-100 shadow-sm">
                             <div class="card-header bg-transparent border-secondary d-flex justify-content-between align-items-center py-3">
                                 <div class="d-flex align-items-center gap-2">
-                                    <span class="badge bg-warning text-dark fw-bold"><i class="fa-solid fa-bolt me-1"></i>In Progress</span>
-                                    <span class="badge bg-secondary text-uppercase">Private</span>
+                                    <span class="badge <?= $winStatus['bg-color'] ?> text-dark fw-bold text-uppercase">
+                                        <i class="fa-solid <?= $winStatus['icon'] ?> me-1"></i><?= $winStatus['text'] ?>
+                                    </span>
+                                    <span class="badge bg-secondary text-uppercase"><?= $game['game_type'] ?></span>
                                 </div>
-                                <span class="text-muted small"><i class="fa-regular fa-clock me-1"></i>Created 2h ago</span>
+                                <span class="text-muted small"><i class="fa-regular fa-clock me-1"></i>Created <?= CustomFunctions::timeago($game['created_at']) ?></span>
                             </div>
 
                             <div class="card-body">
-                                <h5 class="card-title text-white fw-bold mb-2">Lakers vs Celtics Game 7 Winner</h5>
-                                <p class="card-text text-muted small mb-3">Head-to-head match challenge on tonight's playoff match outcome.</p>
+                                <h5 class="card-title text-white fw-bold mb-2"><?= $game['title'] ?></h5>
+                                <p class="card-text text-muted small mb-3" style="height: 75px; overflow:auto"><?= $game['description'] ?></p>
 
                                 <div class="row g-2 mb-3 bg-dark bg-opacity-15 p-3 rounded-3 border border-secondary">
                                     <div class="col-6">
                                         <div class="text-muted small">Your Selection:</div>
-                                        <div class="fw-bold text-warning"><i class="fa-solid fa-circle-check me-1"></i>Lakers Win</div>
+                                        <div class="fw-bold text-warning"><i class="fa-solid fa-circle-check me-1"></i><?= $game['choice_details'] ?></div>
                                     </div>
                                     <div class="col-6 text-end">
                                         <div class="text-muted small">Stake Amount:</div>
-                                        <div class="fw-bold text-success fs-6">$50.00 USD</div>
+                                        <div class="fw-bold text-success fs-6">$<?= $game['stake_cost'] ?> USD</div>
                                     </div>
                                 </div>
 
                                 <div class="d-flex align-items-center justify-content-between text-muted small">
-                                    <span><i class="fa-solid fa-user-shield me-1 text-info"></i>Opponent: <strong>@Alex24</strong></span>
-                                    <span class="badge bg-outline-secondary border text-light"><i class="fa-solid fa-scale-unbalanced me-1"></i>Escrow Locked</span>
+                                    <span><i class="fa-solid fa-user-shield me-1 text-info"> 
+                                        </i>Opponent: <strong><?= $game['total_players'] ?> Player(s)</strong>
+                                    </span>
+                                    <span class="badge bg-outline-secondary border text-light">
+                                        <?= ($game['status']=='disputed') ? '<i class="fa-solid fa-scale-unbalanced me-1"></i>Escrow Locked</span>':''?>
                                 </div>
                             </div>
 
-                            <div class="card-footer bg-transparent border-secondary d-flex justify-content-between align-items-center py-3">
-                                <a href="#" class="btn btn-sm btn-outline-warning fw-medium"><i class="fa-solid fa-eye me-1"></i> View Details</a>
-                                <button class="btn btn-sm btn-outline-danger" data-bs-toggle="tooltip" title="Open Dispute"><i class="fa-solid fa-triangle-exclamation me-1"></i> Dispute</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- CARD 2: Disputed Match (Under Admin Review) -->
-                    <div class="col-lg-6 col-12">
-                        <div class="card box-border-linear-gradient bg-dark text-light border-0 rounded-4 h-100 shadow-sm border-danger">
-                            <div class="card-header bg-transparent border-secondary d-flex justify-content-between align-items-center py-3">
-                                <div class="d-flex align-items-center gap-2">
-                                    <span class="badge bg-danger text-white fw-bold"><i class="fa-solid fa-triangle-exclamation me-1"></i>Disputed</span>
-                                    <span class="badge bg-secondary text-uppercase">Public</span>
-                                </div>
-                                <span class="text-muted small"><i class="fa-regular fa-clock me-1"></i>Updated 1d ago</span>
-                            </div>
-
-                            <div class="card-body">
-                                <h5 class="card-title text-white fw-bold mb-2">FC Barcelona vs Real Madrid El Clasico</h5>
-                                <p class="card-text text-muted small mb-3">Opponent claimed draw, but evidence submitted shows 2-1 final score.</p>
-
-                                <div class="row g-2 mb-3 bg-dark bg-opacity-15 p-3 rounded-3 border border-secondary">
-                                    <div class="col-6">
-                                        <div class="text-muted small">Your Selection:</div>
-                                        <div class="fw-bold text-warning"><i class="fa-solid fa-circle-check me-1"></i>FC Barcelona</div>
-                                    </div>
-                                    <div class="col-6 text-end">
-                                        <div class="text-muted small">Total Pot:</div>
-                                        <div class="fw-bold text-success fs-6">$200.00 USD</div>
-                                    </div>
-                                </div>
-
-                                <div class="d-flex align-items-center justify-content-between text-muted small">
-                                    <span><i class="fa-solid fa-link me-1 text-warning"></i>Proof URL Submitted</span>
-                                    <span class="badge bg-danger bg-opacity-25 text-danger border border-danger">Awaiting Admin Override</span>
-                                </div>
-                            </div>
-
-                            <div class="card-footer bg-transparent border-secondary d-flex justify-content-between align-items-center py-3">
-                                <a href="#" class="btn btn-sm btn-warning fw-bold text-dark"><i class="fa-solid fa-file-contract me-1"></i> Track Dispute</a>
-                                <span class="text-muted small">ID: #GAME-8921</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- CARD 3: Pending Invitation (Private Invite Received) -->
-                    <div class="col-lg-6 col-12">
-                        <div class="card box-border-linear-gradient bg-dark text-light border-0 rounded-4 h-100 shadow-sm">
-                            <div class="card-header bg-transparent border-secondary d-flex justify-content-between align-items-center py-3">
-                                <div class="d-flex align-items-center gap-2">
-                                    <span class="badge bg-info text-dark fw-bold"><i class="fa-solid fa-envelope me-1"></i>Invite Received</span>
-                                    <span class="badge bg-secondary text-uppercase">Private</span>
-                                </div>
-                                <span class="text-muted small"><i class="fa-regular fa-clock me-1"></i>Expires in 12h</span>
-                            </div>
-
-                            <div class="card-body">
-                                <h5 class="card-title text-white fw-bold mb-2">FIFA 24 Ultimate Team Tournament</h5>
-                                <p class="card-text text-muted small mb-3">Challenged by <strong>@ProGamer99</strong>. Select your choice to lock match.</p>
-
-                                <div class="row g-2 mb-3 bg-dark bg-opacity-15 p-3 rounded-3 border border-secondary">
-                                    <div class="col-6">
-                                        <div class="text-muted small">Challenger:</div>
-                                        <div class="fw-bold text-white">@ProGamer99</div>
-                                    </div>
-                                    <div class="col-6 text-end">
-                                        <div class="text-muted small">Required Stake:</div>
-                                        <div class="fw-bold text-success fs-6">$25.00 USD</div>
-                                    </div>
-                                </div>
-
-                                <div class="d-flex align-items-center justify-content-between text-muted small">
-                                    <span><i class="fa-solid fa-arrows-rotate me-1 text-warning"></i>Double or Nothing Enabled</span>
-                                </div>
-                            </div>
-
+                            <?php if ($game['player_accepted_invitation']==='pending') { ?>
                             <div class="card-footer bg-transparent border-secondary d-flex justify-content-between align-items-center py-3">
                                 <div class="btn-group gap-2">
-                                    <button class="btn btn-sm btn-success fw-bold px-3"><i class="fa-solid fa-check me-1"></i> Accept</button>
-                                    <button class="btn btn-sm btn-outline-secondary text-light px-3"><i class="fa-solid fa-xmark me-1"></i> Decline</button>
+                                    <a href="/user/games/<?= $game['game_url'] ?>#choices" class="btn btn-sm btn-success fw-bold px-3"><i class="fa-solid fa-check me-1"></i> Accept</a>
+                                    <button class="btn btn-sm btn-outline-secondary text-light px-3" onclick="rejectInvitation(`<?= $game['id'] ?>`,`<?= $game['title'] ?>`);return false;">
+                                        <i class="fa-solid fa-xmark me-1"></i> Decline
+                                    </button>
                                 </div>
-                                <a href="#" class="btn btn-sm btn-link text-muted p-0 text-decoration-none">View Terms</a>
+                                <a href="/legal/terms-of-use" class="btn btn-sm btn-link text-muted p-0 text-decoration-none">View Terms</a>
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- CARD 4: Completed Game (Won) -->
-                    <div class="col-lg-6 col-12">
-                        <div class="card box-border-linear-gradient bg-dark text-light border-0 rounded-4 h-100 shadow-sm opacity-75">
-                            <div class="card-header bg-transparent border-secondary d-flex justify-content-between align-items-center py-3">
-                                <div class="d-flex align-items-center gap-2">
-                                    <span class="badge bg-success text-white fw-bold"><i class="fa-solid fa-trophy me-1"></i>Won</span>
-                                    <span class="badge bg-secondary text-uppercase">Public</span>
-                                </div>
-                                <span class="text-muted small"><i class="fa-solid fa-calendar-check me-1"></i>3 days ago</span>
-                            </div>
-
-                            <div class="card-body">
-                                <h5 class="card-title text-white fw-bold mb-2">Bitcoin Price above $70k by Nov 10</h5>
-                                <p class="card-text text-muted small mb-3">Publicly proven outcome verified via official exchange index.</p>
-
-                                <div class="row g-2 mb-3 bg-dark bg-opacity-15 p-3 rounded-3 border border-secondary">
-                                    <div class="col-6">
-                                        <div class="text-muted small">Winning Choice:</div>
-                                        <div class="fw-bold text-success"><i class="fa-solid fa-circle-check me-1"></i>Yes (Above $70k)</div>
-                                    </div>
-                                    <div class="col-6 text-end">
-                                        <div class="text-muted small">Payout Collected:</div>
-                                        <div class="fw-bold text-success fs-6">+$100.00 USD</div>
-                                    </div>
-                                </div>
-
-                                <div class="d-flex align-items-center justify-content-between text-muted small">
-                                    <span><i class="fa-solid fa-shield-check text-success me-1"></i>Publicly Proven</span>
-                                    <span class="text-muted">Status: Completed</span>
-                                </div>
-                            </div>
-
+                            <?php } else { ?>
+                            
                             <div class="card-footer bg-transparent border-secondary d-flex justify-content-between align-items-center py-3">
-                                <a href="#" class="btn btn-sm btn-outline-secondary text-light"><i class="fa-solid fa-receipt me-1"></i> View Receipt</a>
-                                <span class="text-muted small">ID: #GAME-7104</span>
+                                <a href="/user/games/<?= $game['game_url'] ?>" class="btn btn-sm btn-outline-warning fw-medium">
+                                    <i class="fa-solid fa-eye me-1"></i> View Details</a>
+                                <button class="btn btn-sm <?= $gameStatus['color'] ?>" data-bs-toggle="tooltip"  >
+                                    <i class="fa-solid <?= $gameStatus['icon'] ?> me-1"></i> <?= $gameStatus['text'] ?></button>
                             </div>
+                            <?php } ?>
+
                         </div>
                     </div>
+                    <?php } ?>
+ 
 
                 </div>
             </div>
