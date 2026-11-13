@@ -43,8 +43,8 @@
                                 <?php $me = $this->_me; ?>
                                 <div class='col-md-6 mb-3'>
                                     <label>First Name</label>
-                                    <input class='form-control udata' rel='user_full_name'  value='<?php echo $me['user_full_name'] ?>'>
-                                    <span class='user_full_name'></span>
+                                    <input class='form-control udata' rel='username'  value='<?php echo $me['username'] ?>'>
+                                    <span class='username'></span>
                                 </div>
                                 
                                 <div class='col-md-6 mb-3'>
@@ -54,12 +54,6 @@
                                     <span class='user_email'></span>
                                 </div>
                                 <!--------------------------------->
-                                <div class='col-md-6 mb-3'> 
-                                    <label class='dispboth'><span>Tel</span>  </label>
-                                   
-                                    <input  class='form-control udata' rel='user_phone'  value='<?php echo $me['user_phone'] ?>'>
-                                    <span class='user_phone'></span>
-                                </div> 
                                  
                                 <div class='col-md-6 mb-3'>
                                     <label>Your Role</label>

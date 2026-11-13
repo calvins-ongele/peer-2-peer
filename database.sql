@@ -91,6 +91,7 @@ create table transaction_history(
   job_status enum('pending','completed', 'refunded' ) default 'completed',
   uuid varchar(50) default uuid(),
   order_uuid varchar(50),
+  game varchar(50),
   purpose varchar(100),
   dr_cr enum('cr', 'dr'),
   created_at datetime default current_timestamp(),
@@ -262,6 +263,7 @@ create table choices(
   game_id int not null,
   choice_details varchar(255),
   is_winning_choice int default 0,
+  votes_count int default 0,
   foreign key (game_id) references games(id) on delete cascade
 );
 -- -------------
@@ -271,6 +273,7 @@ create table players(
   id int auto_increment primary key,
   game_id int not null,
   answer_chosen int null, -- null when just invited
+  answer_voted int null -- votes during a disupte
   is_winner int default 0,
   player_user_id int null,
   player_accepted_invitation enum('pending', 'accepted', 'rejected') default 'pending',
@@ -281,4 +284,17 @@ create table players(
   foreign key (player_user_id) references users(id) on delete set null,
   foreign key (game_id) references games(id) on delete cascade,
   foreign key (answer_chosen) references choices(id) on delete set null
+);
+-- -------------
+-- table for `mail_queues`
+-- ----------
+drop table mail_queues;
+create table mail_queues(
+  id int auto_increment primary key,
+  email varchar(100),
+  subject varchar(150),
+  msg longtext,
+  status enum('pending', 'sent') default 'pending',
+  created_at datetime default current_timestamp(),
+  updated_at datetime default current_timestamp() ON Update current_timestamp()
 );

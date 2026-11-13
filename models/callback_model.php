@@ -37,7 +37,7 @@ class Callback_Model extends Model
         } 
 
         $this->_update('users', 'user_balance', 'id', [$final_amount, $data['user_id'] ]);
-        $this->chuckoffAmount( ($final_amount/USD_2_KES_RATE), $this->me($data['user_id']) );
+        $this->chuckoffAmount( ($final_amount/USD_2_KES_RATE), $this->me($data['user_id']),action:'add',purpose:'Mpesa Deposit' );
 
     }
     public function mpesawithdrawalfeedback() {
@@ -49,7 +49,7 @@ class Callback_Model extends Model
         $data = $this->_get("deposit_request", "uuid ", [ $uuid ], 0)[1];
         if (empty($data)) die;
 
-        $this->chuckoffAmount( $data['amount']??0, $this->me($data['user_id']), $uuid, 'mpesa payment', 'sub' );
+        $this->chuckoffAmount( $data['amount']??0, $this->me($data['user_id']), orderUuid:$uuid, purpose:'mpesa payment', action:'sub' );
 
 
     }

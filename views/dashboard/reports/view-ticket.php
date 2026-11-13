@@ -67,12 +67,12 @@
                     let form = new FormData();
                     form.append('id', $(this).attr('rel') );
                     
-                    if (confirm("You want to permanently delete this?")) {
+                    if (confirm("You want to permanently delete this ticket?")) {
                         const data = _data(form, 'deleteticket');
+                        alert('Success');
+                        location.href="/<?= PROFILE_NAV  ?>/reports/contacts";
                     }
                     
-                    alert('Success');
-                    location.href="/<?= PROFILE_NAV  ?>/reports/contacts"
                 });
                 $('.closeticket').click(function(e) {
                     e.preventDefault();
@@ -81,9 +81,10 @@
                     
                     if (confirm("You want to permanently close this?")) {
                         const data = _data(form, 'closeticket');
+                        alert('Success');
+                        location.reload();
                     }
-                    alert('Success');
-                    location.reload();
+                    
                 });
                 
                 

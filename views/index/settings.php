@@ -77,7 +77,7 @@
     <script type="text/javascript"> 
         const editor = new ContentEditor({container:"#contentArea", background:'rgb(0,9, 9)'});
         const defaultContent = `<?= $this->_content[$_GET['cont_id']??'']['body']??'' ?>`;
-        editor.set('defaultContent');
+        editor.set(defaultContent);//('defaultContent');
         
     </script>
 

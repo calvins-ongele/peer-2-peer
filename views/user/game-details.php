@@ -3,6 +3,11 @@ $choices = $this->game['choices'];
 $game = $this->game['game'];
 $players = $this->game['players'];
 $me = $this->_me;
+// $arr = [ ['name'=>'John', 'age'=>50], ['name'=>'Jane', 'age'=>20], ['name'=>'Doe', 'age'=>100 ]  ];
+// $mePlaying = array_filter($arr, fn($p)=> $p['age'] > 20 );
+// echo "<pre>";
+// print_r($mePlaying);
+// echo "</pre>";
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -39,12 +44,14 @@ $me = $this->_me;
                     <div class="d-flex gap-2">
                         <?php
 
+                        $myPlayingCol = array_filter($players, fn($p)=>($p['player_user_id']===$me['id']) );
+
                         $gameStatus = CustomFunctions::gameStatus($game['status']);
                         $status = '';
-                        if ((($game['status'] == 'completed') || ($game['status'] == 'overriden_by_admin')) && ($game['is_winner'])) {
+                        if ((($game['status'] == 'completed') || ($game['status'] == 'overriden_by_admin')) && ($myPlayingCol[0]['is_winner'])) {
                             $status = 'won';
                         }
-                        if ((($game['status'] == 'completed') || ($game['status'] == 'overriden_by_admin')) && (!$game['is_winner'])) {
+                        if ((($game['status'] == 'completed') || ($game['status'] == 'overriden_by_admin')) && (!$myPlayingCol[0]['is_winner'])) {
                             $status = 'lost';
                         }
                         if (($game['status'] == 'pending') || ($game['status'] == 'in_progress') || ($game['status'] == 'disputed')) {
@@ -176,18 +183,6 @@ $me = $this->_me;
                                         <?php } ?>
                                     </form>
 
-                                    <div class="d-flex justify-content-between gap-2">
-                                        <a href="#" class="btn btn-outline-danger" onclick="actOnMatch(`<?= $game['game_url'] ?>`, `<?= $game['title'] ?>`, 'disputed');return false;">Dispute Results</a>
-                                        <?php if ($game['created_by'] === $me['id']) { ?>
-                                            
-                                            <a href="#" class="btn btn-outline-warning" onclick="actOnMatch(`<?= $game['game_url'] ?>`, `<?= $game['title'] ?>`, 'in_progress');return false;">Progressing?</a>
-
-                                            
-                                            <a href="#" class="btn btn-danger" onclick="actOnMatch(`<?= $game['game_url'] ?>`, `<?= $game['title'] ?>`, 'cancel',`<?= htmlspecialchars(json_encode($selectableChoices)) ?>`);return false;">Cancel</a>
-                                            
-                                            <a href="#" class="btn btn-outline-success" onclick="actOnMatch(`<?= $game['game_url'] ?>`, `<?= $game['title'] ?>`, 'completed',`<?= htmlspecialchars(json_encode($selectableChoices)) ?>`);return false;">Complete the Match</a>
-                                        <?php } ?>
-                                    </div>
 
                                 </div>
 
@@ -208,6 +203,41 @@ $me = $this->_me;
                                         <?= CustomFunctions::linkify($game['evidence_4_disputes']) ?>
                                     </div>
                                 </div>
+
+                                
+                                    <div class="d-flex justify-content-between gap-2 mt-3"> 
+                                        <?php if (Session::get('role')==='Admin') { if ( ($game['status'] === 'completed')||($game['status'] === 'disputed')||($game['status'] === 'pending') || ($game['status'] === 'in_progress')  ) { ?>
+                                        
+                                        <a href="#" class="btn btn-outline-success" onclick="actOnMatch(`<?= $game['game_url'] ?>`, `<?= $game['title'] ?>`, 'override',`<?= htmlspecialchars(json_encode($selectableChoices)) ?>`);return false;">Override Results</a>
+
+                                        <?php }} if (($game['status'] === 'completed')  ) { ?>
+                                        <a href="#" class="btn btn-outline-danger" onclick="actOnMatch(`<?= $game['game_url'] ?>`, `<?= $game['title'] ?>`, 'disputed');return false;">Dispute Results</a>
+                                        <?php } if ($game['created_by'] === $me['id']) { ?>
+                                            
+                                        <?php if (($game['status'] === 'in_progress') || ($game['status']==='pending') ) { ?>
+                                            <a href="#" class="btn btn-outline-warning" onclick="actOnMatch(`<?= $game['game_url'] ?>`, `<?= $game['title'] ?>`, 'in_progress');return false;"
+                                            ><?= ($game['status']=='in_progress') ?'Allow Others to Join' :'Progressing?' ?></a>
+                                          
+                                            <a href="#" class="btn btn-danger" onclick="actOnMatch(`<?= $game['game_url'] ?>`, `<?= $game['title'] ?>`, 'cancel' );return false;">Cancel</a>
+                                             
+                                            <a href="#" class="btn btn-outline-success" onclick="actOnMatch(`<?= $game['game_url'] ?>`, `<?= $game['title'] ?>`, 'completed',`<?= htmlspecialchars(json_encode($selectableChoices)) ?>`);return false;">Complete the Match</a>
+                                        <?php } }?>
+                                        <?php if (($game['status'] === 'completed') && ($game['created_by'] !== $me['id']) ) { ?>
+                                        
+                                            <a href="#" class="btn btn-outline-success" onclick="actOnMatch(`<?= $game['game_url'] ?>`, `<?= $game['title'] ?>`, 'vote',`<?= htmlspecialchars(json_encode($selectableChoices)) ?>`);return false;">Which option do you think won?</a>
+                                        <?php } ?>
+                                    </div>
+                                    <div class="mt-3 alert shadow">
+                                        <p>When a match is completed and it's solution could not be determined publicly:
+                                            <ul>
+                                                <li>A sole player will be assumed winner.</li> 
+                                                <li>A simple majority of votes will win.</li>
+                                                <li>Stake refund if noone selected the winning option </li>
+                                            </ul>
+                                            <a href="/legal/terms-of-use">Read more</a>
+                                        </p>
+                                    </div>
+
                             </div>
                         </div>
                     </div>
@@ -429,24 +459,47 @@ $me = $this->_me;
 
             let actionTobeTaken = '';
             let moreText = '';
+            let adminOverride = '';
             async function actOnMatch(game_url, title, status, options = '' ) {
                 
                 actionTobeTaken = status;
                 const form = new FormData();
                 form.set('game_url', game_url);
                 form.set('status', status);
+                let validOptions;
                 let confirm;
+                let winnerOption;
                 switch (status) {
-                    case 'completed': 
-                        const validOptions = JSON.parse(options);
+                    case 'override':
+                        adminOverride = "The answer you choose will override any other supposed win and settle any dispute.";
+                        validOptions = JSON.parse(options);
                         console.log(validOptions);
-                        const winnerOption = await selectWinnerOption(validOptions, title);
+                        winnerOption = await selectWinnerOption(validOptions, title);
+                        form.set('winner_id', winnerOption);
+                        if (winnerOption)
+                            sendAction(form);
+                        break;
+                    case 'vote':
+                        adminOverride = '';
+                        validOptions = JSON.parse(options);
+                        console.log(validOptions);
+                        winnerOption = await selectWinnerOption(validOptions, title);
+                        form.set('winner_id', winnerOption);
+                        if (winnerOption)
+                            sendAction(form);
+                        break;
+                    case 'completed': 
+                        adminOverride = '';
+                        validOptions = JSON.parse(options);
+                        console.log(validOptions);
+                        winnerOption = await selectWinnerOption(validOptions, title);
                         form.set('winner_id', winnerOption);
                         if (winnerOption)
                             sendAction(form);
                         break;
                     case 'cancel':
-                        moreText = `be cancelled and you will be refunded 100%. <br>However, it will not be cancelled if there are more that one player to maintain platform's integrity according to our <a href='/legal/terms-of-use'>terms</a>.`;
+                        moreText = `be cancelled and you will be refunded 100%. <br>However, it will not be cancelled if there are more that one player to maintain platform's integrity according to our <a href='/legal/terms-of-use'>terms</a>.
+                        <br> $<?= CANCELLATION_FEE_PC ?>% will be deducted as a cancellation fee.`;
                         confirm = await confirmDisputingOrProgress(title);
                         if (!confirm) return;
                         sendAction(form);
@@ -473,6 +526,7 @@ $me = $this->_me;
             async function selectWinnerOption(validOptions, title) {
                 const { value: winner } = await Swal.fire({
                     title: `Which option won in ${title}?`,
+                    html:  `<span class='text-danger'>${adminOverride}</span>`,
                     input: "select",
                     inputOptions: validOptions,
                     inputPlaceholder: "Select the winning option",

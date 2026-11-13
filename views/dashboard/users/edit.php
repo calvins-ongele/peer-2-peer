@@ -23,7 +23,7 @@
                     <div class='container alert'> 
                        
                          <form   class="universal-form" data-url="update_users"  data-feedback="feedback-add_users"  autocomplete='off' >
-                             <input type='hidden' name='id'  value='<?= $this->user['user_ID'] ?>'>
+                             <input type='hidden' name='id'  value='<?= $this->user['id'] ?>'>
                              <input type='hidden' name='action'  value='update'>
                      
                                 <div class='row'> 
@@ -31,7 +31,7 @@
                                 <div class='col-md-6'>
                                     <div class="form-group">
                                         <label> Name  </label> 
-                                        <input type='text' name='name' class="  form-control" required value='<?= $this->user['user_full_name'] ?>' >
+                                        <input type='text' name='name' class="  form-control" required value='<?= $this->user['username'] ?>' >
                                     </div>
                                 </div>
                                
@@ -40,13 +40,7 @@
                                         <label> Email  </label> 
                                         <input type='text' name='email' class="  form-control" required  value='<?= $this->user['user_email'] ?>'>
                                     </div>
-                                </div>
-                                <div class='col-md-6'>
-                                    <div class="form-group">
-                                        <label> Phone </label> 
-                                        <input type='tel' name='phone' class="  form-control" required  value='<?= $this->user['user_phone'] ?>'>
-                                    </div>
-                                </div>
+                                </div> 
                                 <div class='col-md-6'>
                                     <div class="form-group btnsend">
                                         <label>Role </label>  

@@ -35,6 +35,12 @@ class User extends Controller
         $this->view->title = "Change Password";
         $this->view->render('user/change-password');
     }
+    public function transactions() {
+        $this->view->history = $this->model->getTrnxHistory();
+        $this->view->summaries = $this->model->summariesCals();
+        $this->view->title = "Transaction History";
+        $this->view->render('user/transactions');
+    }
 
 
 

@@ -90,6 +90,7 @@
 		formData.set('phone',phone);
 		formData.set('csrf_token',csrf_token);
 		formData.set('method',meth);
+		formData.set('message',message);
 
 
 		$.ajax({

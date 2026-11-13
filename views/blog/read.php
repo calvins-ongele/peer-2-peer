@@ -10,16 +10,16 @@
     <!-- main Header end -->
 
     <!-- Subpage Hero Section Start -->
-    <div class="subpage-header">
+    <div class="subpage-header"  style="background-image: url('/public/assets/uploads/<?= $this->blog[0]['blog_image'] ?>');">
         <div class="container">
             <div class="row">
                 <div class="co-md-12">
                     <!-- Sub page Header start -->
                     <div class="subpage-header-box">
-                        <h1 class="wow fadeInUp" data-wow-delay="0.25s">Contact Us</h1>
+                        <h1 class="wow fadeInUp" data-wow-delay="0.25s"><?= $this->blog[0]['blog_title'] ?></h1>
                         <ul class="breadcrumb wow fadeInUp" data-wow-delay="0.50s">
-                            <li><a href="index.html">Home</a></li>
-                            <li>Contact Us</li>
+                            <li><a href="/">Home</a></li>
+                            <li><?= $this->blog[0]['blog_title'] ?></li>
                         </ul>
                     </div>
                     <!-- Sub page Header end -->
@@ -63,55 +63,29 @@
                         </div>
 
                         <div class="col-md-10">
-                            <!-- Post Entry Start -->
-                            <div class="post-entry wow fadeInUp" data-wow-delay="0.75s">
-                                <h2>Lorem Ipsum is simply dummy text of the and industry.</h2>
-
-                                <p>Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.</p>
-
-                                <h3>Lorem Ipsum is simply dummy.</h3>
-
-                                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
-
-                                <blockquote class="box-border-linear-gradient">
-                                    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
-                                </blockquote>
-
-                                <h3>Lorem Ipsum is simply dummy.</h3>
-
-                                <ul>
-                                    <li>Lorem Ipsum is simply dummy text of the printing and typesetting industry.</li>
-                                    <li>Lorem Ipsum is simply dummy text of the printing and typesetting industry.</li>
-                                    <li>Lorem Ipsum is simply dummy text of the printing and typesetting industry.</li>
-                                    <li>Lorem Ipsum is simply dummy text of the printing and typesetting industry.</li>
-                                    <li>Lorem Ipsum is simply dummy text of the printing and typesetting industry.</li>
-                                    <li>Lorem Ipsum is simply dummy text of the printing and typesetting industry.</li>
-                                    <li>Lorem Ipsum is simply dummy text of the printing and typesetting industry.</li>
-                                </ul>
-                            </div>
-                            <!-- Post Entry End -->
+                             <?= $this->blog[0]['blog_content'] ?>
 
                             <!-- Post Tags Start -->
                             <div class="post-tag wow fadeInUp" data-wow-delay="1.0s">
                                 <ul>
-                                    <li class="box-border-linear-gradient"><a href="#">#gamers</a></li>
+                                    <!-- <li class="box-border-linear-gradient"><a href="#">#gamers</a></li>
                                     <li class="box-border-linear-gradient"><a href="#">#casino</a></li>
                                     <li class="box-border-linear-gradient"><a href="#">#jackpot</a></li>
                                     <li class="box-border-linear-gradient"><a href="#">#Disc</a></li>
-                                    <li class="box-border-linear-gradient"><a href="#">#bonuses</a></li>
+                                    <li class="box-border-linear-gradient"><a href="#">#bonuses</a></li> -->
                                 </ul>
                             </div>
                             <!-- Post Tags End -->
 
                             <!-- Post Pagination Start -->
-                            <div class="post-btn wow fadeInUp" data-wow-delay="1.25s">
+                            <!-- <div class="post-btn wow fadeInUp" data-wow-delay="1.25s">
                                 <div class="btn-pre box-border-linear-gradient">
                                     <a href="blog-single.html" class="btn-default"><i class="fa-regular fa-circle-left"></i>Previous</a>
                                 </div>
                                 <div class="btn-next box-border-linear-gradient">
                                     <a href="blog-single.html" class="btn-default">Next<i class="fa-regular fa-circle-right"></i></a>
                                 </div>
-                            </div>
+                            </div> -->
                             <!-- Post Pagination End -->
                         </div>
                     </div>
@@ -137,69 +111,7 @@
             </div>
 
             <div class="row">
-                <!-- Post item Start -->
-                <div class="col-lg-4 col-md-6 col-12">
-                    <div class="post-item box-border-linear-gradient wow fadeInUp" data-wow-delay="0.25s">
-                        <div class="post-img">
-                            <a href="blog-single.html"><img src="images/post-3.jpg" alt=""></a>
-                        </div>
-
-                        <div class="post-content">
-                            <div class="post-header">
-                                <div class="post-meta">
-                                    <ul>
-                                        <li><i class="fa-solid fa-calendar-days"></i> 13 December 2023</li>
-                                    </ul>
-                                </div>
-                                <h2><a href="blog-single.html">Spin to Win: Mastering the Slot Machines</a></h2>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <!-- Post item End -->
-
-                <!-- Post item Start -->
-                <div class="col-lg-4 col-md-6 col-12">
-                    <div class="post-item box-border-linear-gradient wow fadeInUp" data-wow-delay="0.50s">
-                        <div class="post-img">
-                            <a href="blog-single.html"><img src="images/post-4.jpg" alt=""></a>
-                        </div>
-                        <div class="post-content">
-                            <div class="post-header">
-                                <div class="post-meta">
-                                    <ul>
-                                        <li><i class="fa-solid fa-calendar-days"></i> 13 December 2023</li>
-                                    </ul>
-                                </div>
-
-                                <h2><a href="blog-single.html">High Stakes Hustle: Navigating the Casino Floor</a></h2>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <!-- Post item End -->
-
-                <!-- Post item Start -->
-                <div class="col-lg-4 col-md-6 col-12">
-                    <div class="post-item box-border-linear-gradient wow fadeInUp" data-wow-delay="0.75s">
-                        <div class="post-img">
-                            <a href="blog-single.html"><img src="images/post-5.jpg" alt=""></a>
-                        </div>
-
-                        <div class="post-content">
-                            <div class="post-header">
-                                <div class="post-meta">
-                                    <ul>
-                                        <li><i class="fa-solid fa-calendar-days"></i> 13 December 2023</li>
-                                    </ul>
-                                </div>
-
-                                <h2><a href="blog-single.html">Blackjack Brilliance: Strategies for Success</a></h2>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <!-- Post item End -->
+             <?php $blogData = $this->blog[1]; require 'public/sections/blog.section.php'; ?>
 
             </div>
         </div>

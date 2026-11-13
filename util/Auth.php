@@ -5,9 +5,8 @@ class Auth {
 		Session::initialize();
 		
 		if ((Session::get('userid') == null) || (Session::get('role') !== 'Admin' ) ) {
-			session_destroy();
-			Session::initialize();
-			//Session::set('await_login', $_SERVER["REQUEST_URI"]);
+			Session::destroy();
+			Session::initialize(); 
 			CustomFunctions::locate('/');
 			exit;
 		}
@@ -17,13 +16,10 @@ class Auth {
 	 
 	public static function handleLogin() {
 		Session::initialize();
-		if (isset($_COOKIE['tkuvn'])) {
-			CustomFunctions::locate('/account/auth/' .  $_SERVER["REQUEST_URI"]);
-			return;
-		}  
+		 
 		if (Session::get('userid') == null) {
-			session_destroy();
-			@session_start();
+			Session::destroy();
+			Session::initialize();
 			Session::set('await_login', $_SERVER["REQUEST_URI"]);
 			CustomFunctions::locate('/');
 			exit;

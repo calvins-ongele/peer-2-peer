@@ -11,7 +11,7 @@
                 </div>
             </div>
 
-            <div class="row">
+            <div class="row" id="topSlotsHome">
                 <!-- Slot item start -->
                 <div class="col-md-3">
                     <div class="slot-item box-border-linear-gradient wow fadeInUp" data-wow-delay="0.05s">

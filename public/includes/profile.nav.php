@@ -30,8 +30,13 @@
                         <div class="collapse navbar-collapse main-menu">
                             <ul class="navbar-nav mr-auto" id="menu">
                                 <li class="nav-items first-item"><a class="nav-link <?= CustomFunctions::isActiveNav('user') ?>" href="/user">Games</a></li>
+
                                 <li class="nav-items"><a class="nav-link <?= CustomFunctions::isActiveNav('balance') ?>" href="/user/balance">Balance <span>$<?= $this->_me['user_balance']??'0.00' ?></span></a></li>
+
+                                <li class="nav-items"><a class="nav-link <?= CustomFunctions::isActiveNav('transactions') ?>" href="/user/transactions">Transactions </a></li>
+
                                 <li class="nav-items"><a class="nav-link <?= CustomFunctions::isActiveNav('change-password') ?>" href="/user/change-password">Change Password</a></li>  
+
                                 <li class="nav-items btn-login"><a class="nav-link" href="/dashboard/logout">Logout</a></li>
                             </ul>
                         </div>

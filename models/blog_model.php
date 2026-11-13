@@ -14,14 +14,17 @@ class Blog_Model extends Model
 	        return 
 	        [
 	            $data,
-	            $this->_get('blog left join blog_categories on blog_category_fk = bc_ID  ', 'bc_name =, bc_ID !=', [$data['bc_name'], $data['bc_ID']], true, 
-	            'order by blog_ID desc limit 20' )
+	            $this->_get('blog left join blog_categories on blog_category_fk = bc_ID  ', ' blog_slug =', [ $url], true, 
+	            'order by blog_ID desc limit 3' )[1]
 	        
 	        ];
 	    }
 	    
 	    
-	    return $this->_get("blog left join blog_categories on blog_category_fk = bc_ID  order by blog_ID desc {$this->pagination()} ") ;
+	    return [
+			'data'=>$this->_get("blog left join blog_categories on blog_category_fk = bc_ID  order by blog_ID desc {$this->pagination()} ")[1],
+			'count'=>$this->_get("blog left join blog_categories on blog_category_fk = bc_ID ")[0]
+		] ;
 	}
 	public function getblogcategories($categ = '') { 
 	    

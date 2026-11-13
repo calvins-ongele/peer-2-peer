@@ -346,8 +346,7 @@ class MyApp_Model extends Model
             echo $this->_update('blog', 'blog_title, blog_category_fk, blog_content ','blog_ID', 
             [ $_POST['title'],  $_POST['category'], $_POST['body'], $_POST['id']  ] );
         }
-        
-        $this->manage_tags($postid);
+         
         
     }
     public function manage_categories() {  
@@ -365,13 +364,13 @@ class MyApp_Model extends Model
         
         if ($_POST['action'] == 'insert') {
             
-            if ( $this->_get('blog_categories', 'bsite_name', [$_POST['name']])[0] > 0 ) die($this->_ms(1, "Category names don't have to match."));
+            if ( $this->_get('blog_categories', 'bc_name', [$_POST['name']])[0] > 0 ) die($this->_ms(1, "Category names don't have to match."));
              
-            echo $this->_insert('blog_categories', 'bsite_name, bc_url, bc_desc,bc_image ',  [ $_POST['name'], CustomFunctions::randchars(5), $_POST['body'],$img ] );
+            echo $this->_insert('blog_categories', 'bc_name, bc_url, bc_desc,bc_image ',  [ $_POST['name'], CustomFunctions::randchars(5), $_POST['body'],$img ] );
         }
         else if ($_POST['action'] == 'update') {
             
-            echo $this->_update('blog_categories', 'bsite_name, bc_desc ', 'bc_ID',  [ $_POST['name'], $_POST['body'], $_POST['id'] ] );
+            echo $this->_update('blog_categories', 'bc_name, bc_desc ', 'bc_ID',  [ $_POST['name'], $_POST['body'], $_POST['id'] ] );
         }
         
         else if ($_POST['action'] == 'delete') { //drop
@@ -392,7 +391,7 @@ class MyApp_Model extends Model
          
          $msgs = [
              "<p> Email: {$_POST['email']} <br> Phone: {$_POST['phone']}<br><hr> {$_POST['message']} <hr><br> Please <a style='color:white;text-decoration:underline;' href='https://".$_SERVER['HTTP_HOST']."' >login</a> to act on it.</p>",
-             "Hi {$_POST['fname']}, <br> Thank you for reaching out. We received your query and would get back as soon as possible. "
+             "Hi {$_POST['name']}, <br> Thank you for reaching out. We received your query and would get back as soon as possible. "
              
              ];
 
@@ -783,7 +782,7 @@ class MyApp_Model extends Model
 			$this->_insert('players', 'answer_chosen, player_accepted_invitation, game_id, player_user_id', [$_POST['answer_chosen'], 'accepted', $game['id'], $me['id']]); 
 		}
 
-		$this->chuckoffAmount($game['stake_cost'], $me, '', 'game placement', 'substract');
+		$this->chuckoffAmount($game['stake_cost'], $me, '', purpose:'game placement', action:'substract', game:$game['game_url']);
 
 		echo $this->_ms(0, "Congratulations! You succeeded in joining '{$game['title']}' game. Remember to dispute if you feel unsatisfied with result declaration. Good luck.");
 
@@ -827,34 +826,240 @@ class MyApp_Model extends Model
 		$this->_update('players', 'player_accepted_invitation', 'game_id, player_user_id', [$_POST['game_id'],  $this->me()['id'] ]); 
 
 	}
-	public function MatchStatusAction() {
-		$statusOptions = ['completed', 'cancel', 'in_progress', 'disputed' ];
 
-		if ($_POST['status'] === 'disputed') //allow completed only
-			$game = $this->_get('games', 'game_url, status ', [$_POST['game_url'], 'completed'], 0)[1];
-		else 
-			$game = $this->_get('games', '(game_url = ? and (status = ? OR status = ?))', [$_POST['game_url'], 'in_progress', 'pending'], 0)[1];
+	private function settleWinders(array $game, array $players, int $choiceId) {
+		//players who picked the choice
+		$winningPlayers = array_filter($players[1], fn($p) => ($p['answer_chosen'] === $choiceId ) );
+		$totalWinners = count($winningPlayers);
+		  
+		//....................
+		
+			$sql = "UPDATE games g
+					JOIN players p ON g.id = p.game_id 
+					JOIN choices c ON p.answer_chosen = c.id
+					SET g.winning_choice = ?,  p.is_winner = ?
+					WHERE g.id = ? AND c.id = ? ";
+			$this->_query($sql, [ $choiceId,  1,  $game['id'], $choiceId ]);
+ 
+			$winningAmountEachPlayer = ($game['stake_cost'] * $players[0]) / $totalWinners;
+
+			
+			foreach($winningPlayers as $winningPlayer) {
+				$winner = $this->me( $winningPlayer['player_user_id'] );
+				$amount = ($winningAmountEachPlayer > 0) ? (((100 - PLATFORM_FEE_PC ) / 100) * $winningAmountEachPlayer) : 0;
+				$this->chuckoffAmount($amount, $winner, purpose:'Winnings',action:'add', game:$game['game_url'] ); 
+				
+				//two is too little to add to mail queue
+				$body = "<p>Hi {$winner['username']},<br>The winnings for game #<a href='//{$_SERVER['SERVER_NAME']}/games/{$game['game_url']}'>{$game['game_url']}</a> have been deposited to your account.</p>";
+				$subject = "You've got money from winnings";
+				if ($totalWinners < 2) {
+					$this->sendTheEmail($subject, $winner['user_email'], body:$body);
+					continue;
+				}
+
+				// queue them up
+				$this->_mailQueues($winner['user_email'], $body, $subject);
+			} 
+	 
+	}
+	private function determineWinner(array $game, array $players ) {
+		if (empty($game) || empty($players) ) return;
+
+		$players = $this->_get('players', 'player_accepted_invitation, game_id', ['accepted', $game['id']]);//refreshed list
+
+		if ($players[0] === 1) { //refund
+			$amount =  ($game['stake_cost'] > 0) ? (((100 - PLATFORM_FEE_PC ) / 100) * $game['stake_cost']) : 0;
+			//$myColumn = array_filter($players, fn($p)=> $p['player_user_id']=== $me['id'] );
+			// update win
+			$sql = "UPDATE games g
+					JOIN players p ON g.id = p.game_id 
+					JOIN choices c ON p.answer_chosen = c.id
+					SET g.winning_choice = ?, c.is_winning_choice = ?, is_winner = ?
+					WHERE g.id = ? AND p.player_user_id = ? ";
+			$this->_query($sql, [ $players[1][0]['answer_voted'], 1, 1,  $game['id'], $players[1][0]['player_user_id'] ]); 
+			//send email
+			$winner = $this->me( $players[1][0]['player_user_id'] );
+			$this->chuckoffAmount($amount, $winner, purpose:'Winnings',action:'add', game:$game['game_url'] ); 
+			$body = "<p>Hi {$winner['username']},<br>The winnings for game #<a href='//{$_SERVER['SERVER_NAME']}/games/{$game['game_url']}'>{$game['game_url']}</a> have been deposited to your account.</p>";
+			$this->sendTheEmail("You've got money from winnings", $winner['user_email'], body:$body);
+
+			return;
+		}
+ 
+		//what's the leading choice
+		$winningOptions = $this->_get('choices', 'game_id, votes_count > ', [$game['id'], 0], 1, ' order by votes_count desc')[1];
+		$winningOption = $winningOptions[0]; //index 0 -- leading
+		$leadingCount = $winningOption['votes_count'];
+		//total valid voters
+		$playersVoted = $this->_get('players', 'game_id, answer_voted > ', [$game['id'], 0 ]);
+		$halfPlayers = ( $playersVoted[0] / 2 ); //simple majority
+
+		// 
+
+		if ( $leadingCount > $halfPlayers ) { // we have a winner or winners
+		
+			$sql = "UPDATE games g
+					JOIN players p ON g.id = p.game_id 
+					JOIN choices c ON p.answer_chosen = c.id
+					SET g.winning_choice = ?, c.is_winning_choice = ?, is_winner = ?
+					WHERE g.id = ? AND p.answer_chosen = ? ";
+			$this->_query($sql, [ $winningOption['id'], 1, 1,  $game['id'], $winningOption['id'] ]);
+
+			$winningPlayers = array_filter($players[1], fn($p) => $p['answer_chosen'] === $winningOption['id'] );
+			$totalWinners = count($winningPlayers);
+			$winningAmountEachPlayer = ($game['stake_cost'] * $players[0]) / $totalWinners;
+
+			
+			foreach($winningPlayers as $winningPlayer) {
+				$winner = $this->me( $winningPlayer['player_user_id'] );
+				$amount = ($winningAmountEachPlayer > 0) ? (((100 - PLATFORM_FEE_PC ) / 100) * $winningAmountEachPlayer) : 0;
+				$this->chuckoffAmount($amount, $winner, purpose:'Winnings',action:'add', game:$game['game_url'] ); 
+				
+				//two is too little to add to mail queue
+				$body = "<p>Hi {$winner['username']},<br>The winnings for game #<a href='//{$_SERVER['SERVER_NAME']}/games/{$game['game_url']}'>{$game['game_url']}</a> have been deposited to your account.</p>";
+				$subject = "You've got money from winnings";
+				if ($leadingCount < 2) {
+					$this->sendTheEmail($subject, $winner['user_email'], body:$body);
+					continue;
+				}
+
+				// queue them up
+				$this->_mailQueues($winner['user_email'], $body, $subject);
+			} 
+			return;
+		} //else we'll have to wait
+
+		//has everyone voted?
+		if ( count($winningOptions) === $players[0] ) { //voting is done
+			if ($winningOptions[0]['votes_count'] === $winningOptions[1]['votes_count']) { // voting is done and we have a stalemate
+				// push to disputeed
+				$this->_update('games', 'status', 'id', [ 'disputed', $game['id'] ]);
+				//notify admins
+				$this->sendTheEmail("New Dispute Created",'', "<p>Hey Admin<br>A new dispute was created. Look it up.</p>", admin:true);
+			}
+		} 
+
+	}
+	public function MatchStatusAction() {
+		$statusOptions = ['completed', 'cancel', 'in_progress', 'disputed', 'vote' ];
+		$me = $this->me();
+
+		if ( ($_POST['status'] === 'disputed') || $_POST['status'] === 'vote' ) {
+			//allow completed only //can dispute which you did not create..but must be a player
+			$game = $this->_get('games', 'game_url, status ', [$_POST['game_url'], 'completed' ], 0)[1];
+		} else 
+			$game = $this->_get('games', '(created_by = ? and game_url = ? and (status = ? OR status = ?))', [$me['id'], $_POST['game_url'], 'in_progress', 'pending'], 0)[1];
+
+		if (Session::get('role')==='Admin' ) {
+			 // admin overrides the request, but still can only act on completed,disputed,pending,in_progress
+			$game = $this->_get('games', '(status = ? OR status = ? OR status = ? OR status = ? ) ', 
+				['completed', 'disputed', 'in_progress', 'pending'], 0)[1];
+		}
 
 		if (empty($game)) die($this->_ms(1, "You cannot make the requested change to this game in it's current state. Try another action" ));
 
+		$players = $this->_get('players', 'player_accepted_invitation, game_id', ['accepted', $game['id']]);
+
 		switch ($_POST['status']) {
-			case 'cancel':
-				$players = $this->_get('players', 'game_id', [$game['id']]);
+
+			case 'override':
+				// have to come with a picked option
+				if (empty($_POST['winner_id'])) die($this->_ms(1, "Invalid winner option picked"));
+				$isOptionAvailable = $this->_get('choices', 'id', [ $_POST['winner_id'] ],0)[1];
+				if (empty($isOptionAvailable)) die($this->_ms(1, "Invalid winner option picked"));
+
+				$this->_update('games', 'status', 'id', [ 'overriden_by_admin', $game['id'] ]);
+				$this->_update('choices','is_winning_choice', 'id, game_id', [1, $_POST['winner_id'] ]);
+				$this->settleWinders($game, $players, $_POST['winner_id']);
+				break;
+			case 'vote':
+				// have to come with a picked option
+				if (empty($_POST['winner_id'])) die($this->_ms(1, "Invalid winner option picked"));
+				$isOptionAvailable = $this->_get('choices', 'id', [ $_POST['winner_id'] ],0)[1];
+				if (empty($isOptionAvailable)) die($this->_ms(1, "Invalid winner option picked"));
+
+				// my column, 
+				$mePlaying = array_filter($players[1], fn($p)=> ($p['player_user_id']=== $me['id'] && ($p['answer_voted']>0) ) );
+				if (count($mePlaying) > 0) 
+					die($this->_ms(1,'You already voted. Please wait for final results.') ); //count greater than zero means had voted
+
+				//count -- total votes and increment
+				$votes = $isOptionAvailable['votes_count'] + 1;
+				$this->_update('choices', 'votes_count', 'id', [$votes, $isOptionAvailable['id'] ] );
+
+				// save my choice
+				$this->_update('players','answer_voted', 'player_user_id, game_id', [$_POST['winner_id'], $me['id'], $game['id']]);
+				
+				echo $this->_ms(0, "Your vote has been cast. Please look out for winner results shortly.");
+
+				$this->determineWinner($game, $players );
+
+				break;
+			case 'completed':
+				// have to come with a picked option
+				if (empty($_POST['winner_id'])) die($this->_ms(1, "Invalid winner option picked"));
+				$isOptionAvailable = $this->_get('choices', 'id', [ $_POST['winner_id'] ],0)[1];
+				if (empty($isOptionAvailable)) die($this->_ms(1, "Invalid winner option picked"));
+
+				//count -- total votes and increment
+				$votes = $isOptionAvailable['votes_count'] + 1;
+				$this->_update('choices', 'votes_count', 'id', [$votes, $isOptionAvailable['id'] ] );
+
+				// save my choice
+				$this->_update('players','answer_voted', 'player_user_id, game_id', [$_POST['winner_id'], $me['id'], $game['id']]);
+
+				//complete the status
+				$this->_update('games', 'status', 'id', [ 'completed', $game['id'] ]);
+
+				echo $this->_ms(0, "The match is concluded and your vote has been cast too. Please look out for winner results shortly.");
+
+				$this->determineWinner($game, $players );
+
+				// ask others to vote
+				foreach($players[1] as $player) {
+					$user = $this->me($player['player_user_id']);
+					
+					$body = "<p>Hi {$user['username']},<br>The game #<a href='//{$_SERVER['SERVER_NAME']}/games/{$game['game_url']}'>{$game['game_url']}</a> was marked as complete. Please vote.</p>";
+					$subject = "You've got money from winnings";
+
+					$this->_mailQueues($user['user_email'], $body, $subject ); 
+				}
+
+				break;
+			case 'disputed':
+				$mePlaying = array_filter($players[1], fn($p)=> $p['player_user_id']=== $me['id'] );
+				if (count($mePlaying) === 0) die($this->_ms("You can only dispute a game you're participating in."));
+				// only status change is needed
+				$this->_update('games', 'status', 'id', [ 'disputed', $game['id'] ]);
+				echo $this->_ms(0, "The game has been forwarded to admin's queue for resolution. You will be notified if additional information is needed.");
+				//notify admins
+				$this->sendTheEmail("New Dispute Created",'', "<p>Hey Admin<br>A new dispute was created. Look it up.</p>", admin:true);
+				break;
+			case 'in_progress':
+				// only status change is needed
+				$this->_update('games', 'status', 'id', [ 'in_progress', $game['id'] ]);
+				echo $this->_ms(0, "Congrats, Your game is live playing with {$players[0]} other gamers.");
+				break;
+			case 'cancel': 
 				if ($players[0] > 1) die($this->_ms(1, "This match has {$players[0]} players. Therefore cannot be cancelled."));
 				$player = $players[1][0]['player_user_id'] ?? 0;
 				if (($players[0] === 1) && (!empty($player)) ) {
-					// refund
-					$this->chuckoffAmount($game['stake_cost'], $this->me($player), purpose:'Refund'  );
+					// refund //add
+					$refundPlayer = $this->me($player);
+					$amount = ($game['stake_cost'] > 0) ? ((100-CANCELLATION_FEE_PC) / 100) * $game['stake_cost'] : 0;
+					$this->chuckoffAmount($amount, $refundPlayer, purpose:'Refund', game:$game['game_url'], action:'add'  );
+					//send email
+					$body = "Hi {$refundPlayer['username']},<br>We are sorry to inform your that game #<a href='//{$_SERVER['SERVER_NAME']}/games/{$game['game_url']}'>{$game['game_url']}</a> was cancelled and therefore, we've refunded your stake.";
+					$this->sendTheEmail("Refund completed", $refundPlayer['user_email'],body:$body );
 				}
 
 				// cancel 
 				$this->_update('games', 'status', 'id', [ $game['status']==='pending'?'cancelled_b4_start':'abandoned_after_start', $game['id'] ]);
-				die($this->_ms(0, "The match was successfully cancelled and funds refunded as needed."));
-				
+				die($this->_ms(0, "The match was successfully cancelled and funds refunded as needed.")); 
 				break;
 			
 			default:
-				# code...
+				echo $this->_ms(1, "Something is wrong.");
 				break;
 		}
 	}
@@ -1132,6 +1337,19 @@ class MyApp_Model extends Model
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
             
         return curl_exec($ch);
+	}
+	public function last6PopularMatches() {
+		$count = "(select count(*) from players p2 where p2.game_id = g.id )"; 
+        $sql = "SELECT title, game_url as gameId, $count as total_players 
+                    FROM games g
+                    LEFT JOIN players pl ON pl.game_id = g.id
+                    LEFT JOIN choices c ON pl.answer_chosen = c.id
+                    WHERE g.game_type = ? AND g.status = ?
+					ORDER BY total_players DESC, g.id DESC LIMIT 6
+        ";
+		$data = $this->_query("$sql ", ['public', 'pending' ] )[1] ?? [];
+
+		echo $this->_ms(0, ms:json_encode($data));
 	}
 
      

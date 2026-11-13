@@ -5,10 +5,11 @@ class Dashboard extends Controller {
     {
         parent::__construct();
         Session::initialize();
-        Auth::handleLogin();
+        Auth::handleAdminLogin();
     }
 
     public function index() {     
+        $this->view->pid = 'dashboard';
         $this->view->users = $this->model->users(); 
         $this->view->more = $this->model->getsummaries(); 
         $this->view->logs = $this->model->getlogs(50) ;
@@ -35,7 +36,15 @@ class Dashboard extends Controller {
         }
          
     }
-     
+    public function games($page = null) { 
+        $pages = ['index', 'long-running', 'profits'];
+
+        if ( (!$page) || (!in_array($page, $pages))) return $this->notFound();
+
+        $this->view->games = $this->model->gamesReports($page);
+        $this->view->title = "Games: " . $page;
+        $this->view->render(PROFILE_NAV . "/games/$page");
+    } 
     public function profile() {   
         $this->view->title = 'My profile settings';
         $this->view->render(PROFILE_NAV . '/settings/profile');

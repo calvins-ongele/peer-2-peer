@@ -67,14 +67,9 @@
                         <div class="row">
                             <div class="col-6">
                                 <div class="footer-links">
-                                    <h2>Games</h2>
-                                    <ul>
-                                        <li><a href="#">Casino</a></li>
-                                        <li><a href="#">Roulette</a></li>
-                                        <li><a href="#">Zero To Ninty</a></li>
-                                        <li><a href="#">Card Game</a></li>
-                                        <li><a href="#">Promotions</a></li>
-                                        <li><a href="#">Play Jack</a></li>
+                                    <h2>Popular Games</h2>
+                                    <ul id="popularGamesFooter" > 
+                                        <li><a href="#">Promotions</a></li> 
                                     </ul>
                                 </div>
                             </div>
@@ -175,6 +170,57 @@
     <script src="https://demo.awaikenthemes.com/assets/js/theme-panel-dynamic.js"></script>
   
     <script src="/public/static/custom-main.js?v=<?= rand(); ?>" type="text/javascript"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() { 
+
+            fetchPopulatMatches();
+
+            async function fetchPopulatMatches() {
+                const form = new FormData();
+                form.set('csrf_token', '<?= CSRF::get() ?>');
+                form.set('method', 'last6PopularMatches');
+                
+                try {
+                    const response = await fetch('/myapp/requests', { method: "POST",  body: form });
+                    const result = await response.json();
+                    if ((!response.ok) || result.error) {
+                        throw new Error(result.msg || "Something went wrong. Please try again.");
+                    } 
+                    const matches = JSON.parse(result.msg);console.log(matches);
+                    let matchesHtml = '';
+                    let topSlots = '';
+                    matches.forEach(match => {
+                        console.log(match);
+                        matchesHtml += `<li><a href="/games/${match.gameId}" class='text-uppercase' title='${match.title} (${match.total_players} Players)'>#${match.gameId}</a></li>`;
+                        topSlots += `
+                         <div class="col-md-3">
+                            <div class="slot-item box-border-linear-gradient wow fadeInUp" data-wow-delay="0.05s">
+                                <div class="slot-header">
+                                    <div class="slot-playnow">
+                                        <a href="/games/${match.gameId}" class="btn-default">Play Now</a>
+                                    </div>
+
+                                    <div class="slot-img">
+                                        <img src="/public/assets/uploads/dummy.jpg" alt="${match.title}">
+                                    </div>
+                                </div>
+
+                                <div class="slot-body text-center">
+                                    <h3>${match.title} (${match.total_players} Players)</h3> 
+                                </div>
+                            </div>
+                        </div>
+                        `;
+                    });
+
+                    document.querySelector('#popularGamesFooter').innerHTML = matchesHtml;
+                    const topSlotsHome = document.querySelector('#topSlotsHome');
+                    if (topSlotsHome) topSlotsHome.innerHTML = topSlots;
+
+                } catch (error) { console.log(error); }
+            }
+        });
+    </script>
  
  
 

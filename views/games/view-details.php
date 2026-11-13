@@ -133,8 +133,13 @@ $players = $this->game['players'];
                                     
                                         <div class="mt-3 feedback "></div>
                                         <div class=" d-flex justify-content-end">
+                                            
+                                        <?php 
+
+                                        if (! in_array($game['status'], ['overriden_by_admin','abandoned_after_start','cancelled_b4_start'])) { ?>
                                             <a class="btn btn-xsm btn-success" href="/account?return=<?= urlencode("/user/games/{$game['game_url']}") ?>" style="border-color: var(--secondary-color);"
-                                            >Save your Choice</a>
+                                            ><?= ($game['status'] === 'completed') ? 'Vote Now' : 'Save your Choice' ?></a>
+                                        <?php } ?>
                                         </div>
                                        
                                     </form>

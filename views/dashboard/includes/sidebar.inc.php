@@ -8,6 +8,11 @@
                 <li class="nav-item">
                     <a class="nav-link" data-widget="pushmenu" href="#"><i class="fa fa-bars"></i></a>
                 </li>
+                <li class="nav-item">
+                    <div class="theme-switch-wrapper nav-link">
+                        <h4>Welcome Back <?= $this->_me['username'] ?>,</h4>
+                    </div>
+                </li>
                 
             </ul>
             <ul class="navbar-nav ml-auto">
@@ -53,7 +58,7 @@
                 <nav class="mt-2">
                     <ul class="nav nav-pills nav-sidebar nav-child-indent flex-column" data-widget="treeview" role="menu">
                         <li class="nav-item">
-                            <a href="/<?= PROFILE_NAV ?>" class="nav-link  <?php echo $pageid=='home'?'active':'' ?> " >
+                            <a href="/<?= PROFILE_NAV ?>" class="nav-link  <?= CustomFunctions::isActiveNav('dashboard' ) ?> " >
                                 <i class="nav-icon fas fa-home"></i>
                                 <p>
                                     Dashboard 
@@ -62,7 +67,7 @@
                         </li> 
                         <?php if ($this->_me['user_role'] == 'Admin') { ?>
                         <li class="nav-item ">
-                            <a href="products" class="nav-link  <?php echo $pageid=='users'?'active':'' ?> " >
+                            <a href="products" class="nav-link  <?= CustomFunctions::isActiveNav('users',1) ?>" >
                                 <i class="nav-icon fas fa-users"></i>
                                 <p>
                                     Users
@@ -93,10 +98,50 @@
                           
                             </ul>
                         </li> 
+
+                        <li class="nav-item ">
+                            <a href="products" class="nav-link  <?= CustomFunctions::isActiveNav('games',1) ?> " >
+                                <i class="nav-icon fas fa-business-time"></i>
+                                <p>
+                                    Games
+                                    <i class="right fas fa-angle-left"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                 
+                                <li class="nav-item">
+                                    <a href="/<?= PROFILE_NAV ?>/games/index" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>All </p>
+                                    </a>
+                                </li> 
+                                <li class="nav-item">
+                                    <a href="/<?= PROFILE_NAV ?>/games/index?status=disputed" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Disputed </p>
+                                    </a>
+                                </li> 
+                                <li class="nav-item">
+                                    <a href="/<?= PROFILE_NAV ?>/games/index?orderby=date:asc&orderstatus=active" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Long Running </p>
+                                    </a>
+                                </li> 
+                                <li class="nav-item">
+                                    <a href="/<?= PROFILE_NAV ?>/games/profits" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Profits Reporting </p>
+                                    </a>
+                                </li> 
+                              
+                          
+                            </ul>
+                        </li>
+
                         <?php } ?>
                         <?php if ( ($this->_me['user_role'] == 'Admin') || ($this->_settings['user_can_blog'] == 'True') ) { ?>
                         <li class="nav-item ">
-                            <a href="products" class="nav-link  <?php echo $pageid=='blog'?'active':'' ?> " >
+                            <a href="products" class="nav-link  <?= CustomFunctions::isActiveNav('blog',1) ?> " >
                                 <i class="nav-icon fas fa-wallet"></i>
                                 <p>
                                     Blog
@@ -131,7 +176,7 @@
                    
                         <?php if ($this->_me['user_role'] == 'Admin') { ?>
                         <li class="nav-item ">
-                            <a href="products" class="nav-link  <?php echo $pageid=='reports'?'active':'' ?> " >
+                            <a href="products" class="nav-link  <?= CustomFunctions::isActiveNav('reports',1) ?> " >
                                 <i class="nav-icon fas fa-file"></i>
                                 <p>
                                     Reports
@@ -161,7 +206,7 @@
                         
                         <?php if ($this->_me['user_role'] == 'Admin') { ?>
                         <li class="nav-item ">
-                            <a href="products" class="nav-link  <?php echo $pageid=='communicate'?'active':'' ?> " >
+                            <a href="products" class="nav-link  <?= CustomFunctions::isActiveNav('communicate',1) ?> " >
                                 <i class="nav-icon fas fa-envelope"></i>
                                 <p>
                                     Communicate
@@ -189,7 +234,7 @@
                          <?php } ?>
                  <?php if ($this->_me['user_role'] == 'Admin') { ?>
                     <li class="nav-item ">
-                            <a href="products" class="nav-link  <?php echo $pageid=='settings'?'active':'' ?> " >
+                            <a href="products" class="nav-link  <?= CustomFunctions::isActiveNav('settings',1) ?> " >
                                 <i class="nav-icon fas fa-cog"></i>
                                 <p>
                                     Settings

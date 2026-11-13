@@ -10,7 +10,7 @@ class Index extends Controller {
 
     public function index() {    
 		  $this->view->pid = 'home'; 
-          $this->view->latest = $this->model->getblog();    
+          $this->view->blog = $this->model->getblog();    
 		  $this->view->title = $this->_settings()['site_name'] ;
 		  $this->view->render('index/index' );
     }

@@ -6,6 +6,7 @@ class Model extends Database {
 
     // this is the main model,, all others are sub
     // main function is to pass the database connection
+	private bool $sendMailToAdmin = false;
 
     function __construct()
     {
@@ -347,13 +348,16 @@ class Model extends Database {
 		return $this->_get('currencies')[1];
 	}
 	
-	protected function chuckoffAmount($amount = 0, $user = [], $orderUuid = '', $purpose = '', $action='add') {
+	protected function chuckoffAmount($amount = 0, $user = [], $orderUuid = '', $game = '', $purpose = '', $action='add') {
 		$amount = abs($amount);
 		$newBalance = $action=='add' ? ($user['user_balance'] + $amount) : ($user['user_balance'] - $amount);
 
 		$this->_update('users', 'user_balance', 'id', [$newBalance, $user['id']]);
-		$this->_insert('transaction_history', 'amount, user_id, order_uuid, purpose, dr_cr', 
-			[$amount, $user['id'], $orderUuid, $purpose, $action=='add'?'cr':'dr' ]);
+		$this->_insert('transaction_history', 'amount, user_id, order_uuid, purpose, dr_cr, game', 
+			[$amount, $user['id'], $orderUuid, $purpose, $action=='add'?'cr':'dr', $game ]);
+	}
+	protected function _mailQueues(string $email, string $msg, $subject = 'New Notification') {
+		$this->_insert('mail_queues', 'email, msg, subject', [$email, $msg, $subject]);
 	}
 
   
@@ -371,14 +375,15 @@ class Model extends Database {
 	protected function sendTheEmail(string $title, string $recipient, string $body, string $orignalMsgId = '', $admin = false) {
 		// 
 		
-		file_put_contents("logs/Model.EmailByResend.log", "string $title, string $recipient, string $body, string $orignalMsgId". "\n", FILE_APPEND);
+		//file_put_contents("logs/Model.EmailByResend.log", "string $title, string $recipient, string $body, string $orignalMsgId". "\n", FILE_APPEND);
 
 		if (!CustomFunctions::validEmail($recipient )) { return; }
 		$search = ['{{title}}', '{{body}}', '{{year}}', '{{sitename}}'];
 		$replace = [$title, $body, date('Y'), "<a href='#//{$_SERVER['SERVER_NAME']}'>{$this->_settings()['site_name']}</a>" ];
 		$finalBody = str_replace($search, $replace, CustomFunctions::mainTemplate());
 
-		if ($admin) {
+		if ($admin) { 
+			$this->sendMailToAdmin = true;
 			$this->PhpMailerConstruct($recipient, $title, $finalBody, $orignalMsgId );
 			return;
 		}
@@ -540,6 +545,8 @@ protected function EmailByResend(
             //$mail->SMTPKeepAlive = true;
          
             $mail->setFrom($settings['send_from'] , $settings['site_name']);  
+
+			if ($this->sendMailToAdmin) $email = [ $settings['email'] ];
             $i = 0;
             $sentemails = [];
             foreach ($email as $email_row) { 
@@ -555,8 +562,8 @@ protected function EmailByResend(
                 $mail->isHTML(true);                                 
                 $mail->Subject = $subject ?? 'Test from mail auto';
                 $mail->Body    = $message[$i] ?? "<div> Just a test message if working fine </div>";
-                $altbody = $message[$i] ?? 'Alt body';
-                $mail->AltBody = strip_tags($altbody) ;
+                $altbody       = $message[$i] ?? 'Alt body';
+                $mail->AltBody = strip_tags($altbody);
 
 				if (!empty($filename)) {
 					$mail->AddAttachment("{$_SERVER['DOCUMENT_ROOT']}/public/assets/uploads/{$filename}", $filename); 

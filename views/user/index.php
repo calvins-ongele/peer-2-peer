@@ -78,7 +78,31 @@
                 return result.isConfirmed;
         }
 
-    </script>
+     
+document.addEventListener('DOMContentLoaded', function () {
+    const typeFilter = document.getElementById('txTypeFilter');
+    const searchInput = document.getElementById('txSearchInput');
+    const rows = document.querySelectorAll('#content-all div div0');
+
+    function filterTransactions() {
+        const selectedType = typeFilter.value;
+        const searchTerm = searchInput.value.toLowerCase().trim();
+
+        rows.forEach(row => {
+            const rowType = row.getAttribute('data-type');
+            const rowText = row.textContent.toLowerCase();
+
+            const matchesType = (selectedType === 'all' || rowType === selectedType);
+            const matchesSearch = rowText.includes(searchTerm);
+
+            row.style.display = (matchesType && matchesSearch) ? '' : 'none';
+        });
+    }
+
+    typeFilter?.addEventListener('change', filterTransactions);
+    searchInput?.addEventListener('input', filterTransactions);
+});
+</script>
 
     <?php require 'public/includes/footer.inc.php' ?>
 </body>

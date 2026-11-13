@@ -21,6 +21,7 @@ class Games extends Controller
             $this->view->render("games/view-details"); 
             return;
         }
+        $this->view->games = $this->model->fetchPublicGames();  
         $this->view->title = "Games";
         $this->view->render("games/index");
     }

@@ -8,7 +8,7 @@ class User_Model extends Model
     }
 
     public function gameDetails($url = null) {
-        if ($url) {
+        if ($url) { 
             $game = $this->_get('games', 'game_url', [$url], 0)[1];
             if (empty($game)) return; 
             
@@ -52,15 +52,57 @@ class User_Model extends Model
                         FROM players p
                         WHERE p.game_id = g.id
                             AND p.player_user_id = ? AND p.player_accepted_invitation != 'rejected'
-                    );
+                    )
         ";
         $games = $this->_query("$sql {$this->pagination()}", [Session::get('userid'),Session::get('userid') ] )[1] ?? [];
         if (empty($games)) return; 
 
         return [
             'games'=>$games,
-            'count'=>$this->_query("$sql ", [Session::get('userid'),Session::get('userid') ] )[1]
+            'count'=>$this->_query("$sql ", [Session::get('userid'),Session::get('userid') ] )[0]
         ];
+    }
+
+    public function getTrnxHistory() {
+        $cols = 'user_id';
+        $values = [Session::get('userid')];
+        if ( in_array( ($_GET['type']??''), ['cr', 'dr']) ) {
+            $cols .= ', dr_cr';
+            $values[$_GET['type']];
+        }
+
+        $history = $this->_get('transaction_history LEFT JOIN games ON game_url=game', $cols, $values, 1, "{$this->pagination()}" )[1];
+
+        return [
+            'data'=>$history,
+            'count'=>$this->_get('transaction_history', $cols, $values, 1  )[0]
+        ];
+    }
+
+    public function summariesCals() {  
+        $count = "(select count(*) from players p2 where p2.game_id = g.id )"; 
+        $sql = "SELECT SUM(stake_cost) AS locked_amount, $count as totalActiveGames
+                    FROM games g
+                    JOIN players pl ON pl.game_id = g.id 
+                    WHERE pl.player_accepted_invitation = 'accepted' 
+                    AND (g.status = 'in_progress' OR g.status = 'pending' OR g.status = 'disputed' )
+                    AND player_user_id = ? 
+                     
+        ";
+        $locked = $this->_query("$sql ", [Session::get('userid')  ] )[1][0] ?? [];
+
+         
+        $sql = "SELECT SUM(stake_cost) AS amountWon 
+                    FROM games g
+                    JOIN players pl ON pl.game_id = g.id 
+                    WHERE pl.player_accepted_invitation = 'accepted' 
+                    AND (g.status = 'completed' OR g.status = 'overriden_by_admin'   )
+                    AND player_user_id = ? AND is_winner = 1
+                     
+        ";
+        $winnings = $this->_query("$sql ", [Session::get('userid')  ] )[1][0] ?? [];
+
+        return ['locked'=>$locked, 'winnings'=>$winnings ];
     }
 
 

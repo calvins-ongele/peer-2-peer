@@ -59,7 +59,7 @@
                 <!-- Jackpot Heading start -->
                 <div class="col-lg-4 col-md-5 text-md-left text-center order-2">
                     <div class="jackpot-title wow fadeInUp" data-wow-delay="0.50s">
-                        <h2>Progressive <span>Jackpot</span></h2>
+                        <h2>Progressive <span>Winnings</span></h2>
                     </div>
                 </div>
                 <!-- Jackpot Heading end -->
@@ -81,19 +81,33 @@
 
    <!-- How to Play Section Start -->
     <?php require 'public/sections/top-games.section.php' ?> 
-    <!-- How to Play Section End -->
-
-    <!-- Top Slot Section Start -->
-    <?php require 'public/sections/top-games.section.php' ?> 
-    <!-- Top Slot Section End -->
+    <!-- How to Play Section End --> 
 
     <!-- Trusted Casino Section Start -->
-    <?php require 'public/sections/categories.section.php' ?>
+    <?php //require 'public/sections/categories.section.php' ?>
     <!-- Trusted Casino Section End -->
 
 
     <!-- Recent Posts Section Start -->
-    <?php require 'public/sections/recent-posts.section.php' ?>
+    <?php //require 'public/sections/recent-posts.section.php' ?>
+    <div class="recent-post-section">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-12">
+                    <!-- Section Title start -->
+                    <div class="section-title text-center wow fadeInUp" data-wow-delay="0.50s">
+                        <h3 class="wow fadeInUp" data-wow-delay="0.25s">News & Blog</h3>
+                        <h2 class="wow fadeInUp" data-wow-delay="0.50s">Recent News</h2>
+                    </div>
+                    <!-- Section Title end -->
+                </div>
+            </div>
+
+            <div class="row">
+    <?php $blogData = $this->blog[1]; require 'public/sections/blog.section.php'; ?>
+            </div>
+        </div>
+    </div>
     <!-- Recent Posts Section End -->
 
     <!-- FAQs Section Start -->

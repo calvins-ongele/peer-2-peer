@@ -33,21 +33,25 @@
 <div class="about-information">
     <div class="container">
         <div class="row">
-            <div class="col-lg-6 col-12">
+            <div class="col-lg-4 col-12">
                 <!-- About Left img start -->
                 <div class="about-info-img">
-                    <img src="/public/assets/uploads/about-us-img-1.jpg" alt="Peer-to-Peer Betting Escrow" class="wow fadeInUp" data-wow-delay="0.05s">
-                    <img src="/public/assets/uploads/about-us-img-2.jpg" alt="Dispute Resolution and Proof Verification" class="wow fadeInUp" data-wow-delay="0.25s">
+                    <!-- <img src="/public/assets/uploads/about-us-img-1.jpg" alt="Peer-to-Peer Betting Escrow" class="wow fadeInUp" data-wow-delay="0.05s"> -->
+                    <img src="/public/assets/uploads/7d09966e-dd5e-45d2-8cdb-61e09f206639.webp" alt="Dispute Resolution and Proof Verification" class="wow fadeInUp" data-wow-delay="0.25s">
                 </div>
+                
+                    <div class="section-title wow fadeInUp" data-wow-delay="0.50s"> 
+                        <h4 class="wow fadeInUp" data-wow-delay="0.50s">Trustless Peer-to-Peer Wagering & Disputes</h4>
+                    </div>
                 <!-- About Left img end -->
             </div>
 
-            <div class="col-lg-6 col-12">
+            <div class="col-lg-8 col-12">
                 <!-- About Content start -->
                 <div class="about-body">
                     <div class="section-title wow fadeInUp" data-wow-delay="0.50s">
                         <h3 class="wow fadeInUp" data-wow-delay="0.25s">About Our Platform</h3>
-                        <h2 class="wow fadeInUp" data-wow-delay="0.50s">Trustless Peer-to-Peer Wagering & Disputes</h2>
+                        <!-- <h2 class="wow fadeInUp" data-wow-delay="0.50s">Trustless Peer-to-Peer Wagering & Disputes</h2> -->
                     </div>
 
                     <div class="about-content">

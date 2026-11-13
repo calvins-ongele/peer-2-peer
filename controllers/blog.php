@@ -8,8 +8,7 @@ class Blog extends Controller {
         parent::__construct();
     }
 
-    public function index($url = null) {   
-        $this->view->currentpage = $_GET['pg'] ?? 1;
+    public function index($url = null) {    
 		$this->view->pid = 'blog'; 
         
         if ( !empty($url) ) { 
@@ -31,7 +30,7 @@ class Blog extends Controller {
     
    
     
-    public function categories($url = null) {
+    public function categoriesx($url = null) {
         $this->view->currentpage = $_GET['pg'] ?? 1;
 		$this->view->pid = 'blog';
         
