@@ -237,7 +237,7 @@ CREATE TABLE `subscribers` (
 -- --------------
 -- table 'games'
 -- --------
-CREATE TABLE games(
+CREATE TABLE games (
   id int auto_increment primary key,
   title varchar(150) not null,
   description text null,
@@ -287,14 +287,26 @@ create table players(
 );
 -- -------------
 -- table for `mail_queues`
--- ----------
-drop table mail_queues;
+-- ---------- 
 create table mail_queues(
   id int auto_increment primary key,
   email varchar(100),
   subject varchar(150),
   msg longtext,
   status enum('pending', 'sent') default 'pending',
+  created_at datetime default current_timestamp(),
+  updated_at datetime default current_timestamp() ON Update current_timestamp()
+);
+-- -------------
+-- table for `revenues`
+-- ---------- 
+create table revenues(
+  id int auto_increment primary key,
+  amount decimal(14,2),
+  source varchar(30), 
+  game_url varchar(50) null,
+  deposit_request_uuid varchar(50) null, 
+  status enum('ok', 'refunded') default 'ok',
   created_at datetime default current_timestamp(),
   updated_at datetime default current_timestamp() ON Update current_timestamp()
 );

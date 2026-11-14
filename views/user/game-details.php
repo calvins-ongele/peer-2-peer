@@ -16,8 +16,7 @@ $me = $this->_me;
     <?php require 'public/includes/header.inc.php' ?>
     <style>
         .text-muted {
-            color: whitesmoke !important;
-
+            color: whitesmoke !important; 
         }
     </style>
 </head>

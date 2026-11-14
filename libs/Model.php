@@ -359,6 +359,11 @@ class Model extends Database {
 	protected function _mailQueues(string $email, string $msg, $subject = 'New Notification') {
 		$this->_insert('mail_queues', 'email, msg, subject', [$email, $msg, $subject]);
 	}
+	protected function AddRevenue(float $amount, string $source, $gameUrl = '',$depositRequestUuid = '') {
+		$this->_insert("revenues", "amount, source, game_url, deposit_request_uuid",[
+			$amount, $source, $gameUrl, $depositRequestUuid
+		]);
+	}
 
   
 

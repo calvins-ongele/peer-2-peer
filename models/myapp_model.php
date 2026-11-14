@@ -844,6 +844,10 @@ class MyApp_Model extends Model
 			$winningAmountEachPlayer = ($game['stake_cost'] * $players[0]) / $totalWinners;
 
 			
+			$totalRevenuAmount = (PLATFORM_FEE_PC / 100 ) * ($game['stake_cost'] * $players[0]);
+			$this->AddRevenue($totalRevenuAmount, 'PLATFORM_FEE_PC', $game['game_url'] );
+
+			
 			foreach($winningPlayers as $winningPlayer) {
 				$winner = $this->me( $winningPlayer['player_user_id'] );
 				$amount = ($winningAmountEachPlayer > 0) ? (((100 - PLATFORM_FEE_PC ) / 100) * $winningAmountEachPlayer) : 0;
@@ -869,6 +873,7 @@ class MyApp_Model extends Model
 
 		if ($players[0] === 1) { //refund
 			$amount =  ($game['stake_cost'] > 0) ? (((100 - PLATFORM_FEE_PC ) / 100) * $game['stake_cost']) : 0;
+			$this->AddRevenue( ($game['stake_cost'] - $amount), 'PLATFORM_FEE_PC', $game['game_url']  );
 			//$myColumn = array_filter($players, fn($p)=> $p['player_user_id']=== $me['id'] );
 			// update win
 			$sql = "UPDATE games g
@@ -908,6 +913,9 @@ class MyApp_Model extends Model
 			$winningPlayers = array_filter($players[1], fn($p) => $p['answer_chosen'] === $winningOption['id'] );
 			$totalWinners = count($winningPlayers);
 			$winningAmountEachPlayer = ($game['stake_cost'] * $players[0]) / $totalWinners;
+
+			$totalRevenuAmount = (PLATFORM_FEE_PC / 100 ) * ($game['stake_cost'] * $players[0]);
+			$this->AddRevenue($totalRevenuAmount, 'PLATFORM_FEE_PC', $game['game_url'] );
 
 			
 			foreach($winningPlayers as $winningPlayer) {
@@ -1046,8 +1054,11 @@ class MyApp_Model extends Model
 				if (($players[0] === 1) && (!empty($player)) ) {
 					// refund //add
 					$refundPlayer = $this->me($player);
-					$amount = ($game['stake_cost'] > 0) ? ((100-CANCELLATION_FEE_PC) / 100) * $game['stake_cost'] : 0;
+					$amount = ($game['stake_cost'] > 0) ? ((100 - CANCELLATION_FEE_PC) / 100) * $game['stake_cost'] : 0;
 					$this->chuckoffAmount($amount, $refundPlayer, purpose:'Refund', game:$game['game_url'], action:'add'  );
+					
+					$totalRevenuAmount = (CANCELLATION_FEE_PC / 100 ) * $game['stake_cost'];
+					$this->AddRevenue($totalRevenuAmount, 'PLATFORM_FEE_PC', $game['game_url'] );
 					//send email
 					$body = "Hi {$refundPlayer['username']},<br>We are sorry to inform your that game #<a href='//{$_SERVER['SERVER_NAME']}/games/{$game['game_url']}'>{$game['game_url']}</a> was cancelled and therefore, we've refunded your stake.";
 					$this->sendTheEmail("Refund completed", $refundPlayer['user_email'],body:$body );

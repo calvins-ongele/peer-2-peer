@@ -103,16 +103,71 @@ class Dashboard_Model extends Model {
         ];
     }
 
+    public function profitsAndStats() {
+        //
+        $dateLimit = $_GET['limiter'] ?? '';
+        $createdAtInterval = '1=1';
+        switch ($dateLimit) {
+            case 'today':
+                $createdAtInterval = "created_at >= CURDATE() - INTERVAL 1 DAY";
+                break;
+            default: //all
+                $digits = preg_replace('/[^0-9]/', '', $dateLimit);
+                $createdAtInterval = "created_at >= CURDATE() - INTERVAL $digits DAY";
+                if (($dateLimit === 'all') || (empty($digits)) ) $createdAtInterval = '1=1';
+                break;
+        }
+
+      // non completed
+        $sql = "SELECT SUM(stake_cost) AS totalEscrowVolt, count(g.id) as totalGames
+                FROM games g
+                WHERE (g.status = ? || g.status = ? || g.status = ? ) AND winning_choice != 1
+                AND $createdAtInterval
+                ";
+        $values = ['pending', 'in_progress', 'completed']; 
+        $totalEscrowVolt = $this->_query($sql, $values )[1]??[];
+        
+        //revenue
+        $sql = "SELECT SUM(amount) AS totalRevenue  FROM revenues  WHERE $createdAtInterval ";
+        $values = []; 
+        $totalRevenue = $this->_query($sql, $values )[1]??[];
+
+        //disputed
+        $sql = "SELECT count(id) AS disputedGames, SUM(stake_cost) AS disputedAmounts  FROM games  WHERE status=? AND $createdAtInterval ";
+        $values = ['disputed']; 
+        $disputed = $this->_query($sql, $values )[1]??[];
+
+        //total users
+        $sql = "SELECT count(id) AS totalUsers FROM users  WHERE $createdAtInterval ";
+        $values = [ ]; 
+        $totalUsers = $this->_query($sql, $values )[1]??[];
+
+        //all games
+        $sql = "SELECT * FROM games  WHERE $createdAtInterval ";
+        $values = [ ]; 
+        $allGames = $this->_query($sql, $values )[1]??[];
+
+
+        return [
+            'totalEscrowVolt'=>$totalEscrowVolt,
+            'totalRevenue'=>$totalRevenue,
+            'disputed'=>$disputed,
+            'totalUsers'=>$totalUsers,
+            'allGames'=>$allGames,
+        ];
+
+    }
+
     public function gamesReports($page = null) {
         if (!$page) return;
 
         switch ($page) {
             case 'index':
                 return $this->allGames(); 
-            
+            case 'profits':
+                return $this->profitsAndStats();             
             default:
-                # code...
-                break;
+                return []; 
         }
         
     }
