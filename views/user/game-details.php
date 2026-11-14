@@ -30,17 +30,18 @@ $me = $this->_me;
 
 
     <!-- Contact Us Page Start -->
-    <div class="container">
+    <main class="containerpx-5">
+    <div class="container p-5">
 
         <!-- Game Details & Player Invitation Section Start -->
-        <section class="game-details-section py-5">
+        <section class="game-details-section  ">
             <div class="container">
                 <!-- Back Navigation & Header -->
                 <div class="d-flex align-items-center justify-content-between mb-4">
-                    <a href="/user" class="btn btn-outline-secondary text-light btn-sm">
+                    <a href="/user" class="mobile-hide btn btn-outline-secondary text-light btn-sm ">
                         <i class="fa-solid fa-arrow-left me-2"></i> Back to Dashboard
                     </a>
-                    <div class="d-flex gap-2"> 
+                    <div class="d-flex flex-wrap gap-2"> 
                         <?php 
 
                         $myPlayingCol = array_filter($players, fn($p)=>($p['player_user_id']===$me['id']) ); 
@@ -107,7 +108,7 @@ $me = $this->_me;
                                     <div class="col-sm-4 col-12">
                                         <div class="bg-secondary bg-opacity-15 p-3 rounded-3 border border-secondary">
                                             <span class="text-muted small d-block mb-1">Double or Nothing</span>
-                                            <h4 class="text-<?= $game['is_double_or_nothing'] ? 'info' : 'danger' ?> fw-bold mb-0"><i class="fa-solid fa-<?= $game['is_double_or_nothing'] ? 'circle-check' : 'times-circle' ?> me-1"></i><?= $game['is_double_or_nothing'] ? 'Enable' : 'Disabled' ?></h4>
+                                            <h4 class="text-<?= $game['is_double_or_nothing'] ? 'info' : 'danger' ?> fw-bold mb-0"><i class="fa-solid fa-<?= $game['is_double_or_nothing'] ? 'circle-checkx' : 'xtimes-circle' ?> me-1"></i><?= $game['is_double_or_nothing'] ? 'Enable' : 'Disabled' ?></h4>
                                         </div>
                                     </div>
                                 </div>
@@ -210,7 +211,7 @@ $me = $this->_me;
                                 </div>
 
                                 
-                                    <div class="d-flex justify-content-between gap-2 mt-3"> 
+                                    <div class="d-flex justify-content-between flex-wrap gap-2 mt-3"> 
                                         <?php if (Session::get('role')==='Admin') { if ( ($game['status'] === 'completed')||($game['status'] === 'disputed')||($game['status'] === 'pending') || ($game['status'] === 'in_progress')  ) { ?>
                                         
                                         <a href="#" class="btn btn-outline-success" onclick="actOnMatch(`<?= $game['game_url'] ?>`, `<?= $game['title'] ?>`, 'override',`<?= htmlspecialchars(json_encode($selectableChoices)) ?>`);return false;">Override Results</a>
@@ -596,11 +597,19 @@ $me = $this->_me;
         </script>
 
     </div>
+                    </main>
 
 
     <!-- Contact Us Page End -->
-
-
+<script>
+    const mobileScreen = window.matchMedia("(max-width:768px)").matches;
+    const px5 = document.querySelector('.containerpx-5 .container');
+      
+    if (mobileScreen === true) { 
+        console.log(px5)
+        px5.classList.remove('p-5');
+    }
+ </script>
     <?php require 'public/includes/footer.inc.php' ?>
 </body>
 
