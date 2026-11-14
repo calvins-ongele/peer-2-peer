@@ -1,8 +1,3 @@
-<?php
-    $url = 'abc d efg h iks';
-    $url = (!empty($url)) ? CustomFunctions::validUrl($url) : CustomFunctions::randchars(30);
-    //echo $url;
-?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -210,7 +205,7 @@
             feedback.classList.add('alert', 'alert-success');
             feedback.innerHTML = result.msg||'Success'; 
 
-            const pmethod = document.querySelector('input[name="coin"]').value; 
+            const pmethod = form.get('coin'); 
 
             if ( pmethod == 'mpesa' ) { 
                 startPollingMpesaFeedback(result.ordernumber || '');
@@ -223,7 +218,9 @@
 
             //crypto
             
-            if ( (pmethod.split(':')[0]??'') == 'crypto' )
+            const pm = pmethod.split(':')[0]??'';
+            
+            if ( pm === 'crypto' )
                 if (result.cl.length > 0) {
                     location.href=`${result.cl}`;
                 } 

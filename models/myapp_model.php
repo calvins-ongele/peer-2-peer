@@ -784,7 +784,7 @@ class MyApp_Model extends Model
 
 		$this->chuckoffAmount($game['stake_cost'], $me, '', purpose:'game placement', action:'substract', game:$game['game_url']);
 
-		echo $this->_ms(0, "Congratulations! You succeeded in joining '{$game['title']}' game. Remember to dispute if you feel unsatisfied with result declaration. Good luck.");
+		echo $this->_ms(0, "Congratulations! You succeeded in joining '{$game['title']}' game. Remember to dispute if you see any problem. Good luck.");
 
 	}
 
@@ -827,7 +827,7 @@ class MyApp_Model extends Model
 
 	}
 
-	private function settleWinders(array $game, array $players, int $choiceId) {
+	private function settleWinders(array $game, array $players, int $choiceId) { 
 		//players who picked the choice
 		$winningPlayers = array_filter($players[1], fn($p) => ($p['answer_chosen'] === $choiceId ) );
 		$totalWinners = count($winningPlayers);
@@ -841,14 +841,14 @@ class MyApp_Model extends Model
 					WHERE g.id = ? AND c.id = ? ";
 			$this->_query($sql, [ $choiceId,  1,  $game['id'], $choiceId ]);
  
-			$winningAmountEachPlayer = ($game['stake_cost'] * $players[0]) / $totalWinners;
-
-			
+			 
 			$totalRevenuAmount = (PLATFORM_FEE_PC / 100 ) * ($game['stake_cost'] * $players[0]);
 			$this->AddRevenue($totalRevenuAmount, 'PLATFORM_FEE_PC', $game['game_url'] );
 
 			
 			foreach($winningPlayers as $winningPlayer) {
+				$winningAmountEachPlayer = ($game['stake_cost'] * $players[0]) / $totalWinners;
+
 				$winner = $this->me( $winningPlayer['player_user_id'] );
 				$amount = ($winningAmountEachPlayer > 0) ? (((100 - PLATFORM_FEE_PC ) / 100) * $winningAmountEachPlayer) : 0;
 				$this->chuckoffAmount($amount, $winner, purpose:'Winnings',action:'add', game:$game['game_url'] ); 
@@ -911,14 +911,15 @@ class MyApp_Model extends Model
 			$this->_query($sql, [ $winningOption['id'], 1, 1,  $game['id'], $winningOption['id'] ]);
 
 			$winningPlayers = array_filter($players[1], fn($p) => $p['answer_chosen'] === $winningOption['id'] );
-			$totalWinners = count($winningPlayers);
-			$winningAmountEachPlayer = ($game['stake_cost'] * $players[0]) / $totalWinners;
+			$totalWinners = count($winningPlayers); 
 
 			$totalRevenuAmount = (PLATFORM_FEE_PC / 100 ) * ($game['stake_cost'] * $players[0]);
 			$this->AddRevenue($totalRevenuAmount, 'PLATFORM_FEE_PC', $game['game_url'] );
 
 			
 			foreach($winningPlayers as $winningPlayer) {
+				$winningAmountEachPlayer = ($game['stake_cost'] * $players[0]) / $totalWinners; //removes division by zero
+
 				$winner = $this->me( $winningPlayer['player_user_id'] );
 				$amount = ($winningAmountEachPlayer > 0) ? (((100 - PLATFORM_FEE_PC ) / 100) * $winningAmountEachPlayer) : 0;
 				$this->chuckoffAmount($amount, $winner, purpose:'Winnings',action:'add', game:$game['game_url'] ); 
@@ -977,8 +978,9 @@ class MyApp_Model extends Model
 				if (empty($isOptionAvailable)) die($this->_ms(1, "Invalid winner option picked"));
 
 				$this->_update('games', 'status', 'id', [ 'overriden_by_admin', $game['id'] ]);
-				$this->_update('choices','is_winning_choice', 'id, game_id', [1, $_POST['winner_id'] ]);
+				$this->_update('choices','is_winning_choice', 'id, game_id', [1, $_POST['winner_id'], $game['id'] ]);
 				$this->settleWinders($game, $players, $_POST['winner_id']);
+				echo $this->_ms(0, "The game was completed with success.");
 				break;
 			case 'vote':
 				// have to come with a picked option
@@ -1077,7 +1079,7 @@ class MyApp_Model extends Model
 
 	public function withdrawalRequest() {
 		if (!is_numeric($_POST['amount'])) die($this->_ms(1, "Invalid payment method", http_response:400));
-		if (!in_array(explode(':', $_POST['coin'] )[0], ['USDT', 'LTC', 'mpesa', 'paypal'] ))die($this->_ms(1, "Invalid payment method", http_response:400));
+		if (!in_array( $_POST['coin'], ['crypto:USDT', 'crypto:LTC', 'mpesa', 'paypal'] ))die($this->_ms(1, "Invalid payment method", http_response:400));
 
 		
 		$me = $this->me();
@@ -1091,11 +1093,12 @@ class MyApp_Model extends Model
 			if (empty($_POST['network']) || empty($_POST['address']))
 				die($this->_ms(1, "Wallet address and network are both required to fulfill a crypto payment.", http_response:400));
 
-		// add to quueu, manually handle for now
-		$this->_insert("deposit_request", "amount, coin, user_id, uuid, method, is_withdrawal", [
-			$_POST['amount'], $_POST['coin'], Session::get('userid'), $uuid, explode(':', $_POST['coin'] )[0] ?? '', 1
-		]);
+				// add to quueu, manually handle for now
+				$this->_insert("deposit_request", "amount, coin, user_id, uuid, method, is_withdrawal", [
+					$_POST['amount'], $_POST['coin'], Session::get('userid'), $uuid, explode(':', $_POST['coin'] )[0] ?? '', 1
+				]);
 
+				echo $this->_ms(0, "Success. Your withdrawal request was added to the queue and will be processed in due time.");//, third:"/user/balance/deposit-continuation/$uuid");
 		}
 
 		//
@@ -1185,7 +1188,7 @@ class MyApp_Model extends Model
 	}
 	public function depositRequest() {
 		if (!is_numeric($_POST['amount'])) die($this->_ms(1, "Invalid amount", http_response:400));
-		if (!in_array(explode(':', $_POST['coin'] )[0], ['USDT', 'LTC', 'mpesa', 'paypal'] ))die($this->_ms(1, "Invalid payment method", http_response:400));
+		if (!in_array( $_POST['coin'], ['crypto:USDT', 'crypto:LTC', 'mpesa', 'paypal'] ))die($this->_ms(1, "Invalid payment method", http_response:400));
 
 		if (($_POST['coin'] === 'mpesa') && empty($_POST['phone'])) die($this->_ms(1,'Invalid phone number',http_response:400)); 
 		if (($_POST['coin'] === 'paypal') && empty($_POST['email'])) die($this->_ms(1,'Invalid paypal email',http_response:400)); 
@@ -1196,8 +1199,8 @@ class MyApp_Model extends Model
 			$_POST['amount'], $_POST['coin'], Session::get('userid'), $uuid, explode(':', $_POST['coin'] )[0] ?? ''
 		]);
 
-		$link = '';
-		if (explode(':', $_POST['coin'] )[0] == 'crypto' ) $link = "/user/balance/deposit/$uuid";
+		$link = ''; 
+		if (explode(':', $_POST['coin'] )[0] == 'crypto' ) $link = "/user/balance/deposit-continuation/$uuid";
 		if ($_POST['coin'] == 'mpesa' ) { 
 			echo $this->mpesaInit($_POST['amount'], $_POST['phone'] ); die;
 		}
@@ -1205,7 +1208,7 @@ class MyApp_Model extends Model
 			echo $this->paypalInit($_POST['amount'], $_POST['email'] ); die;
 		}
 
-		echo $this->_ms(0, "Success", third:$link);
+		echo $this->_ms(0, "Success. Deposit request received.", third:$link);
 	}
 	private function paypalInit(float|int $amount, string $email) {
 		$accessToken = '';   

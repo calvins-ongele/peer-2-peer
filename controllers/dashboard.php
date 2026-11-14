@@ -107,14 +107,11 @@ class Dashboard extends Controller {
         $this->view->render(PROFILE_NAV . '/users/index');
     }
  
-    public function blog($action = '', $id = null) { 
-	     
+    public function blog($action = '', $id = null) {  
         
         if ( ($this->view->_me['user_role'] != 'Admin') && ($this->view->_settings()['user_can_blog'] != 1) ) {
           die(CustomFunctions::locate('/'.PROFILE_NAV.'?unauthorized=true'.($this->view->_settings()['user_can_blog'] != 1) ));
-        }
-          
-        
+        } 
         $this->view->currentpage = $_GET['pg'] ?? 1;
         $this->view->getCategories = $this->model->getCategories();
         

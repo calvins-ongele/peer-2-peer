@@ -40,17 +40,17 @@ $me = $this->_me;
                     <a href="/user" class="btn btn-outline-secondary text-light btn-sm">
                         <i class="fa-solid fa-arrow-left me-2"></i> Back to Dashboard
                     </a>
-                    <div class="d-flex gap-2">
-                        <?php
+                    <div class="d-flex gap-2"> 
+                        <?php 
 
-                        $myPlayingCol = array_filter($players, fn($p)=>($p['player_user_id']===$me['id']) );
+                        $myPlayingCol = array_filter($players, fn($p)=>($p['player_user_id']===$me['id']) ); 
 
                         $gameStatus = CustomFunctions::gameStatus($game['status']);
                         $status = '';
-                        if ((($game['status'] == 'completed') || ($game['status'] == 'overriden_by_admin')) && ($myPlayingCol[0]['is_winner'])) {
+                        if ((($game['status'] == 'completed') || ($game['status'] == 'overriden_by_admin')) && ($myPlayingCol[0]['is_winner']??0)) {
                             $status = 'won';
                         }
-                        if ((($game['status'] == 'completed') || ($game['status'] == 'overriden_by_admin')) && (!$myPlayingCol[0]['is_winner'])) {
+                        if ((($game['status'] == 'completed') || ($game['status'] == 'overriden_by_admin')) && (!($myPlayingCol[0]['is_winner']??0))) {
                             $status = 'lost';
                         }
                         if (($game['status'] == 'pending') || ($game['status'] == 'in_progress') || ($game['status'] == 'disputed')) {
@@ -139,7 +139,7 @@ $me = $this->_me;
                                             $mychoice = ($IvePlayed[0]['answer_chosen'] ?? 0) === $choice['id'] ? 'checked' : ''; //checked means I've played
                                             $selectableChoices[$choice['id']] = $choice['choice_details'];
 
-                                            $howManyHaveChosenThis = array_filter($players, fn($r) => ($r['answer_chosen'] ?? '') === $choice['id']);
+                                            $howManyHaveChosenThis = array_filter($players, fn($r) => ($r['answer_chosen'] ?? '') === $choice['id']); // echo count($howManyHaveChosenThis);
                                             $border = 'border-secondary';
                                             if ($mychoice === 'checked') $border = 'border-warning';
                                         ?>
@@ -148,17 +148,23 @@ $me = $this->_me;
                                                     <input rel='<?= $choice['choice_details'] ?>' class="choicesradio form-check-input bg-dark border-warning" type="radio" name="answer_chosen" id="choice<?= $choice['id'] ?>" value="<?= $choice['id'] ?>" <?= $mychoice ?> />
                                                     <div>
                                                         <h6 class="text-white fw-bold mb-0">
-                                                            Choice #<?= $index + 1 ?>: <?= $choice['choice_details'] ?>
+                                                            Choice #<?= $index + 1 ?>: <?= $choice['choice_details'] ?>  
                                                         </h6>
                                                         <span class="text-muted small">Selected by <?= count($howManyHaveChosenThis) ?> player(s)</span>
                                                     </div>
                                                 </div>
+                                                
+                                                
                                                 <?php if ($mychoice === 'checked') { ?>
-                                                    <span class="badge bg-warning text-dark fw-bold px-3 py-2"><i class="fa-solid fa-user-check me-1"></i> Your Selection</span>
+                                                    <span class="badge bg-warning text-dark fw-bold px-3 py-2"><?= ($choice['is_winning_choice'])?'<span class="text-success"><i class="fa fa-trophy"></i></span>':''  ?> <i class="fa-solid fa-user-check me-1"></i> Your Selection</span>
                                                 <?php } ?>
                                                 <?php if (count($howManyHaveChosenThis) === 0) { ?>
-                                                    <span class="badge bg-dark border border-secondary text-muted px-3 py-2">Open Choice</span>
-                                                <?php } ?>
+                                                    <span class="badge bg-dark border border-secondary text-muted px-3 py-2"><?= ($choice['is_winning_choice'])?'<span class="text-success"><i class="fa fa-trophy"></i></span>':''  ?>Open Choice</span>
+                                                <?php } else { ?>
+                                                
+                                               
+                                                    <?= ($choice['is_winning_choice'])?'<span class="bg-success text-white p-2"><i class="fa fa-trophy"></i></span>':''  ?> 
+                                                     <?php } ?>
                                             </label>
                                         <?php } ?>
 
@@ -476,7 +482,7 @@ $me = $this->_me;
                         winnerOption = await selectWinnerOption(validOptions, title);
                         form.set('winner_id', winnerOption);
                         if (winnerOption)
-                            sendAction(form);
+                            sendAction(form, title);
                         break;
                     case 'vote':
                         adminOverride = '';
@@ -539,7 +545,7 @@ $me = $this->_me;
                 });
                 return winner;
             }
-            async function sendAction(form) {
+            async function sendAction(form, title = '') {
                 form.set('csrf_token', '<?= CSRF::get() ?>');
                 form.set('method', 'MatchStatusAction');
 
@@ -553,6 +559,11 @@ $me = $this->_me;
                         throw new Error(result.msg || "Something went wrong. Please try again.");
                     }
 
+                    await Swal.fire({
+                        title: "Success",
+                        html: `<bold style="font-weight:bold">${title}'s</bold> ${result.msg}`,
+                        icon: "success"   
+                    });
                     showToast(result.msg || `The game was successfully ${actionTobeTaken}.`, 'bg-success');
                     setTimeout(() => {
                         window.location.reload();

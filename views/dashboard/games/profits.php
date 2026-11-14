@@ -173,11 +173,14 @@
                         <div class="row g-3">
                             <div class="col-sm-4 col-6 mb-2">
                                 <div class="p-3 bg-secondary bg-opacity-15 rounded-3 border border-secondary">
-                                    <?php $completed = array_filter($stats['allGames'], fn($g)=>($g['status']==='completed') ); ?>
+                                    <?php 
+                                        $completed = array_filter($stats['allGames'], fn($g)=>($g['status']==='completed') ); 
+                                        $totalCompleted = (count($completed)===0)?1:count($completed);
+                                    ?>
                                     <?php $settled = array_filter($stats['allGames'], fn($g)=>(( $g['status']==='completed') && ($g['status']==='completed') ) ); ?>
                                     <span class="badge bg-success mb-2">completed</span>
                                     <h5 class="text-white fw-bold mb-0"><?= number_format(count($completed)) ?></h5>
-                                    <small class="text-white"><?= (count($settled) / count($completed))*100 ?>% settled</small>
+                                    <small class="text-white"><?= (count($settled) / $totalCompleted)*100 ?>% settled</small>
                                 </div>
                             </div>
                             <div class="col-sm-4 col-6 mb-2">
@@ -239,8 +242,8 @@
                                 $public = array_filter($stats['allGames'], fn($g)=>($g['game_type']==='public') ); 
                                 $totalGames = count($stats['allGames']);
                                 $private = $totalGames  - count($public);
-                                $privatePc = ( $private / $totalGames ) * 100;
-                                $publicPc = ( count($public) / $totalGames ) * 100;
+                                $privatePc = ( $private / ($totalGames===0?1:$totalGames) ) * 100;
+                                $publicPc = ( count($public) / ($totalGames===0?1:$totalGames) ) * 100;
                             ?>
                         <div class="mb-4">
                             <div class="d-flex justify-content-between small mb-1">
@@ -260,7 +263,7 @@
                                 <div class="p-3 bg-secondary bg-opacity-15 rounded-3 border border-secondary text-center">
                                     <i class="fa-solid fa-shield-check text-success fs-5 mb-1"></i>
                                     <?php $provable = array_filter($stats['allGames'], fn($g)=>($g['can_be_publicly_proven']===1) );  ?>
-                                    <h6 class="text-white fw-bold mb-0"><?= (count($provable)/$totalGames)*100 ?>%</h6>
+                                    <h6 class="text-white fw-bold mb-0"><?= (count($provable)/($totalGames===0?1:$totalGames))*100 ?>%</h6>
                                     <span class="text-white small d-block">Publicly Provable</span>
                                 </div>
                             </div>
@@ -268,7 +271,7 @@
                                 <div class="p-3 bg-secondary bg-opacity-15 rounded-3 border border-secondary text-center">
                                     <i class="fa-solid fa-arrows-rotate text-info fs-5 mb-1"></i>
                                     <?php $dobleOrNothing = array_filter($stats['allGames'], fn($g)=>($g['can_be_publicly_proven']===1) );  ?>
-                                    <h6 class="text-white fw-bold mb-0"><?= (count($dobleOrNothing)/$totalGames)*100 ?>%</h6>
+                                    <h6 class="text-white fw-bold mb-0"><?= (count($dobleOrNothing)/($totalGames===0?1:$totalGames))*100 ?>%</h6>
                                     <span class="text-white small d-block">Double or Nothing</span>
                                 </div>
                             </div>
@@ -276,7 +279,7 @@
                                 <div class="p-3 bg-secondary bg-opacity-15 rounded-3 border border-secondary text-center">
                                     <i class="fa-solid fa-gift text-warning fs-5 mb-1"></i>
                                      <?php $free = array_filter($stats['allGames'], fn($g)=>( (int)($g['stake_cost']) <= 0) );  ?>
-                                    <h6 class="text-white fw-bold mb-0"><?= (count($free)/$totalGames)*100 ?>%</h6>
+                                    <h6 class="text-white fw-bold mb-0"><?= (count($free)/($totalGames===0?1:$totalGames))*100 ?>%</h6>
                                     <span class="text-white small d-block">Free Promo ($0.00)</span>
                                 </div>
                             </div>

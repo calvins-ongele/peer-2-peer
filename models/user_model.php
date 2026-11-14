@@ -105,6 +105,94 @@ class User_Model extends Model
         return ['locked'=>$locked, 'winnings'=>$winnings ];
     }
 
+    
+    public function depositRequest($uuid = '') {
+        return $this->_get('deposit_request', 'uuid', [$uuid],0)[1];
+    }
+
+    
+    public function getPyament($uuid = '') {
+        $data = $this->_get('deposit_request', 'uuid,status', [$uuid, 'completed'], 0)[1];
+
+        if (empty($data)) CustomFunctions::locate('/master/balance');
+        return $data;
+    }
+
+    public function sendPayment($uuid = '') {
+            $apiKey = NOWPAYMENTS_API;
+            $paymentUrl = "https://api.nowpayments.io/v1/payment";
+            $id = $uuid;
+
+            $data = $this->_get('deposit_request ', 'uuid', [$id] , 0)[1];
+            if (empty($data)) {
+                return ("<p style='color:red; background:light-gray; padding:10px; border-radius:1' ><strong>Error:</strong> Invalid payment id </p>");
+            }
+
+            $network =  'ERC20'; //for now
+            $depositCoint = trim(strtoupper(str_replace(['*', '-'], ['', ''], $data['coin'])) .$network );
+ 
+            $payload = [  
+                "price_amount" => $data['amount'], // Amount in USD
+                "price_currency" => 'USD',
+                "pay_currency" => $depositCoint, // Paying with BTC
+                "ipn_callback_url" => "https://{$_SERVER['SERVER_NAME']}/callback/nwp-hook",
+                "order_id" => $id,
+                "order_description" => "Deposit",
+            ];
+
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $paymentUrl);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+            curl_setopt($ch, CURLOPT_POST, 1);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                "x-api-key: $apiKey",
+                "Content-Type: application/json"
+            ]);
+
+            $response = curl_exec($ch); 
+
+            $result = json_decode($response, true);
+            $output = '
+                        <div class="card shadow-lg">
+                        <div class="card-header bg-primary text-white text-center">
+                            <h3>Payment Details</h3>
+                        </div>
+                        <div class="card-body text-centexr"> ';
+                        
+            file_put_contents("logs/payments.log", "PAYMENT Resonse:: $response\n", FILE_APPEND);
+
+            if (isset($result["pay_address"]) && isset($result["pay_amount"])) {
+                
+                $this->_update('deposit_request', 'wallet_address, now_order_id',  'payment_id', [$result['pay_address'] ??'', $result['payment_id'], $id] ) ;
+
+            $until = str_replace('T','', explode('.', $result['valid_until'])[0] );
+                // $output .= "<h3 class='mb-4'>Payment Details </h3> "; 
+                $output .= "<div>
+                            <div class='mydisp'>
+                                <span>Coin:</span>
+                                <span>{$depositCoint}</span></div><hr> </div>";
+                
+                $output .= "<div><div class='mydisp'>
+                            <span>Amount:</span>
+                                <span>{$result['pay_amount']} {$depositCoint}</span></div><hr> </div>";
+                $output .= "<div><div class='mydisp'>
+                            <span>Address: </span>
+                            <span style='cursor:pointer;' onclick=\"copy('{$result['pay_address']}')\" class='paddress'>{$result['pay_address']} <img style='height:20px' src='/public/assets/system/copy.png'></span> 
+                            </div><hr> </div>";
+                $output .= "<div><div class='mydisp'><span>Order ID: </span><span id='orderid'>{$result['order_id']}</span></div><hr> </div>";
+                $output .= "<div><div class='mydisp'><span>Expires: </span><span>{$until}</span></div><hr> </div>";
+                $output .= "<div><div class='mydisp'><span>QR Code: </span><span><img  class='qr-code img-fluid' src='https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={$result["pay_address"]}'></span></div><hr> </div>";
+
+            } else {
+                if (isset($result['message'])) $output .= "<p>{$result['message']}</p>";
+                else
+                $output .= "Error: <p>" . json_encode($result). "</p>";
+            }
+
+            return $output .= "</div></div>";
+        } 
+
 
 
 

@@ -12,10 +12,16 @@ class User extends Controller
         $this->view->title = "User";
         $this->view->render("user/index");
     }
-    public function balance($action = '') { 
+    public function balance($action = '', $uid = '') { 
         if ($action === 'withdraw') {
             $this->view->title = "Balance";
             $this->view->render("user/withdraw");
+            return;
+        }
+        if ($action === 'deposit-continuation') {
+            $this->view->deposit = $this->model->sendPayment($uid);
+            $this->view->title = "Complete the Deposit";
+            $this->view->render("user/deposit-continuation");
             return;
         }
         $this->view->title = "Balance";
