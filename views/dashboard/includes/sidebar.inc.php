@@ -138,6 +138,35 @@
                             </ul>
                         </li>
 
+
+                        
+                        <li class="nav-item ">
+                            <a href="products" class="nav-link  <?= CustomFunctions::isActiveNav('withdrawals',1) ?> " >
+                                <i class="nav-icon fas fa-wallet"></i>
+                                <p>
+                                    Withdrawals
+                                    <i class="right fas fa-angle-left"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                 
+                                <li class="nav-item">
+                                    <a href="/<?= PROFILE_NAV ?>/withdrawals/index" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>All </p>
+                                    </a>
+                                </li> 
+                                <li class="nav-item">
+                                    <a href="/<?= PROFILE_NAV ?>/withdrawals/index?status=pending" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Pending withdrawals </p>
+                                    </a>
+                                </li>   
+                              
+                          
+                            </ul>
+                        </li>
+
                         <?php } ?>
                         <?php if ( ($this->_me['user_role'] == 'Admin') || ($this->_settings['user_can_blog'] == 'True') ) { ?>
                         <li class="nav-item ">

@@ -45,6 +45,15 @@ class Dashboard extends Controller {
         $this->view->title = "Games: " . $page;
         $this->view->render(PROFILE_NAV . "/games/$page");
     } 
+    public function withdrawals($page = null) { 
+        $pages = ['index' ];
+
+        if ( (!$page) || (!in_array($page, $pages))) return $this->notFound();
+
+        $this->view->games = $this->model->withdrawalReports($page);
+        $this->view->title = "Withdrawals: " . $page;
+        $this->view->render(PROFILE_NAV . "/withdrawals/$page");
+    } 
     public function profile() {   
         $this->view->title = 'My profile settings';
         $this->view->render(PROFILE_NAV . '/settings/profile');

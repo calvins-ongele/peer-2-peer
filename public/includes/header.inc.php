@@ -11,7 +11,7 @@
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
 <title><?php echo $this->title ?> | <?= $this->page_id=='home' ? $this->_settings['short_desc'] : $this->_settings['site_name'] ?></title>
  
-
+ 
     <!-- Google Fonts css-->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -24,6 +24,8 @@
     <link rel="stylesheet" href="/public/css/swiper-bundle.min.css">
     <!-- Font Awesome icon css-->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet" media="screen">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <!-- Animated css -->
     <link href="/public/css/animate.css" rel="stylesheet">
     <!-- Magnific css -->

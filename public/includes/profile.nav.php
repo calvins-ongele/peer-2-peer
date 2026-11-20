@@ -31,6 +31,7 @@
                          <ul class="navbar-nav mr-auto" id="menu">
                              <li class="nav-items first-item"><a class="nav-link <?= CustomFunctions::isActiveNav('user') ?>" href="/user">Games</a></li>
 
+                            <li class="nav-items"><a class="nav-link <?= CustomFunctions::isActiveNav('aviator') ?>" href="/aviator">Aviator</a></li>
                              <li class="nav-items"><a class="nav-link <?= CustomFunctions::isActiveNav('balance', 1) ?>" href="/user/balance">Balance <span>$<?= $this->_me['user_balance'] ?? '0.00' ?></span></a></li>
 
                              <li class="nav-items"><a class="nav-link <?= CustomFunctions::isActiveNav('transactions') ?>" href="/user/transactions">Transactions </a></li>

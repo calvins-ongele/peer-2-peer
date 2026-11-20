@@ -91,8 +91,7 @@ class Controller {
 			
 			");
 	}
-	public function notFound() {
-		http_response_code(404);
+	public function notFound() { 
 		$this->view->hstyles = array();
 		$this->view->_settings = array('c_name'=>$_SERVER['SERVER_NAME'], 'c_logo'=>'1.png', 'c_tel'=>'07');//$this->_settings();
 		$this->view->title = '404 Error'; 

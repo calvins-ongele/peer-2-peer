@@ -1108,14 +1108,23 @@ class MyApp_Model extends Model
 				if (! CustomFunctions::validEmail($_POST['email'])  )
 					die($this->_ms(1, "Email address is required to fulfill a Paypal payment.", http_response:400)); 
 			}
-			$feedback =  $this->paypalToCustomInit([ 'amount_usd'=>$_POST['amount'], 'email'=>$_POST['email'] ]);
 
-			// if success
-			if (!json_decode($feedback)->error) {
-				$this->chuckoffAmount($_POST['amount'] + 1, $me, $uuid, 'paypal payment', 'sub'  );
+			
+			if (!empty($_POST['admin']) && (Session::get('role') === 'Admin') ) {
+				
+				$feedback =  $this->paypalToCustomInit([ 'amount_usd'=>$_POST['amount'], 'email'=>$_POST['email'] ]);
+
+				// if success
+				if (!json_decode($feedback)->error) {
+					$this->chuckoffAmount($_POST['amount'] + 1, $me, $uuid, 'paypal payment', 'sub'  );
+				}
+
+				echo $feedback;
+
+			} else {
+				echo $this->_ms(0, "Success. Your withdrawal request was added to the queue and will be processed in due time.");
 			}
-
-			echo $feedback;
+			
 
 		}
 		
@@ -1126,8 +1135,18 @@ class MyApp_Model extends Model
 			$this->_insert("deposit_request", "amount, coin, user_id, uuid, method, is_withdrawal", [
 				$_POST['amount'], $_POST['coin'], Session::get('userid'), $uuid, explode(':', $_POST['coin'] )[0] ?? '', 1
 			]);
-			echo $this->mpesaToCustomInit([ 'amount_usd'=>$_POST['amount'], 'phone'=>$_POST['phone'], 'id'=>$uuid ]);
+			if (!empty($_POST['admin']) && (Session::get('role') === 'Admin') ) {
+				echo $this->mpesaToCustomInit([ 'amount_usd'=>$_POST['amount'], 'phone'=>$_POST['phone'], 'id'=>$uuid ]);
+			} else {
+				echo $this->_ms(0, "Success. Your withdrawal request was added to the queue and will be processed in due time.");
+			}
 		}
+
+		
+		// add to quueu, manually handle for now
+		$this->_insert("deposit_request", "amount, coin, user_id, uuid, method, is_withdrawal", [
+			$_POST['amount'], $_POST['coin'], Session::get('userid'), $uuid, explode(':', $_POST['coin'] )[0] ?? '', 1
+		]);
 
 	}
 	private function mpesaToCustomInit($initDetails = []) {

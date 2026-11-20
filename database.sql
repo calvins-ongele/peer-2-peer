@@ -310,3 +310,28 @@ create table revenues(
   created_at datetime default current_timestamp(),
   updated_at datetime default current_timestamp() ON Update current_timestamp()
 );
+-- ----------------
+-- table for aviator games
+-- -------------
+create table aviator(
+    id int AUTO_INCREMENT primary key,
+    round_id int,
+    plane_flew_at decimal(14,2),
+    created_at datetime default current_timestamp() ,
+    updated_at datetime default current_timestamp() ON Update current_timestamp() 
+
+);
+-- ----------------
+-- table for aviator history
+-- -------------
+create table aviator_history(
+    id int AUTO_INCREMENT primary key,
+    player_id int,
+    aviator_id int,
+    bet_amount decimal(14,2),
+    cashout_at decimal (14,2),
+    winning_amount decimal (14,2),
+    created_at datetime default current_timestamp() ,
+    updated_at datetime default current_timestamp() ON Update current_timestamp() 
+
+);

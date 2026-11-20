@@ -171,6 +171,40 @@ class Dashboard_Model extends Model {
         }
         
     }
+
+    public function withdrawalReports($page = null) {
+
+     $replacements = [
+            'date'=>'created_at',
+        ]; 
+        $sql = "SELECT dr.*, user_email, username
+                    FROM deposit_request dr
+                    LEFT JOIN users u ON u.id = dr.user_id 
+                    WHERE is_withdrawal = 1
+        ";
+        $wheres = '';
+        $values = [ ];
+        $orderBy = "ORDER BY dr.id DESC";
+        if (!empty($_GET['status'])) {
+            $wheres .= "  AND status = ? ";
+            $values[] = $_GET['status'];
+        }
+        if (!empty($_GET['orderby'])) {
+            $explodeOrderBy = explode(':', $_GET['orderby']);
+            if (! empty($replacements[$explodeOrderBy[0]])) 
+                $orderBy = " ORDER BY {$replacements[$explodeOrderBy[0]]} " . ($explodeOrderBy[1] ?? 'ASC');
+        }
+       
+
+        $wdrawals = $this->_query("$sql $wheres $orderBy {$this->pagination()}", $values )[1] ?? [];
+         
+
+        return [
+            'data'=>$wdrawals,
+            'count'=>$this->_query("$sql ", [ ] )[0]
+        ];
+
+    }
  
      
 
